@@ -3,12 +3,15 @@ import { Bell, BarChart3, Users, Music, FileText, Upload, Settings, LogOut, Tren
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import logoImage from 'figma:asset/aa0296e2522220bcfcda71f86c708cb2cbc616b9.png';
 import backgroundImage from 'figma:asset/0a2a9faa1b59d5fa1e388a2eec5b08498dd7a493.png';
+import CSVUploader from './components/CSVUploader';
+import { useData } from './components/DataContext';
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
 export default function DashboardSimple({ onLogout }: DashboardProps) {
+  const { artists, tracks, dashboardData } = useData();
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications] = useState(3);
@@ -17,6 +20,14 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Función para formatear importes en formato europeo
+  const formatEuro = (amount: number): string => {
+    return amount.toLocaleString('es-ES', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) + '€';
+  };
 
   // Detectar scroll para contraer y ocultar header
   useEffect(() => {
@@ -55,19 +66,61 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
     { name: 'Configuración', icon: Settings }
   ];
 
-  const salesData: any[] = [];
+  // Datos para gráfico circular de CSV - Artistas
+  const csvChartData = artists.slice(0, 5).map((artist, index) => {
+    const colors = ['#c9a574', '#4ade80', '#60a5fa', '#f87171', '#a78bfa'];
+    return {
+      name: artist.name,
+      value: artist.totalRevenue,
+      color: colors[index % colors.length]
+    };
+  });
 
-  // Datos para gráfico circular de CSV
-  const csvChartData: any[] = [];
+  // Datos para gráfico lineal de CSV - Periodos reales del CSV
+  const csvLineData = dashboardData.monthlyData.length > 0 
+    ? dashboardData.monthlyData.map(data => ({
+        mes: data.month,
+        revenue: data.revenue,
+        streams: data.streams
+      }))
+    : [];
 
-  // Datos para gráfico lineal de CSV
-  const csvLineData: any[] = [];
+  // Datos para gráfico circular de DSP - Plataformas
+  const platformColors: { [key: string]: string } = {
+    'Spotify': '#1DB954',
+    'Apple Music': '#FA243C',
+    'YouTube': '#FF0000',
+    'Amazon Music': '#FF9900',
+    'Deezer': '#FEAA2D',
+    'Tidal': '#000000',
+    'Pandora': '#3668FF'
+  };
 
-  // Datos para gráfico circular de DSP
-  const dspChartData: any[] = [];
+  const dspChartData = Object.entries(dashboardData.platformBreakdown)
+    .slice(0, 7)
+    .map(([name, value]) => ({
+      name,
+      value,
+      color: platformColors[name] || '#c9a574'
+    }));
 
-  // Datos de canciones recientes del CSV
-  const recentTracks: any[] = [];
+  // Datos de canciones recientes del CSV - Top 10
+  const recentTracks = tracks
+    .slice()
+    .sort((a, b) => b.totalRevenue - a.totalRevenue)
+    .slice(0, 10)
+    .map((track) => {
+      const platformColor = platformColors[track.platforms[0]] || '#c9a574';
+      return {
+        title: track.title,
+        artist: track.artistName,
+        isrc: track.isrc || 'N/A',
+        streams: track.totalStreams,
+        revenue: track.totalRevenue,
+        platform: track.platforms[0] || 'Unknown',
+        platformColor
+      };
+    });
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -94,10 +147,10 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
             {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px' }}>
               {[
-                { title: 'Total Royalties', value: '€0', change: '+0%', color: '#c9a574' },
-                { title: 'Artistas Activos', value: '0', change: '+0', color: '#4ade80' },
-                { title: 'Canciones', value: '0', change: '+0', color: '#60a5fa' },
-                { title: 'Pagos Pendientes', value: '€0', change: '0%', color: '#f87171' }
+                { title: 'Total Royalties', value: formatEuro(dashboardData.totalRevenue), change: '+0%', color: '#c9a574' },
+                { title: 'Artistas Activos', value: dashboardData.artistCount.toString(), change: `+${dashboardData.artistCount}`, color: '#4ade80' },
+                { title: 'Canciones', value: dashboardData.trackCount.toString(), change: `+${dashboardData.trackCount}`, color: '#60a5fa' },
+                { title: 'Total Streams', value: dashboardData.totalStreams.toLocaleString(), change: `+${dashboardData.totalStreams.toLocaleString()}`, color: '#f87171' }
               ].map((stat, i) => (
                 <div key={i} style={{
                   background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
@@ -462,72 +515,332 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
         );
       
       case 'Subir CSV':
+        return <CSVUploader />;
+      
+      case 'Artistas':
         return (
           <div>
             <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '24px', color: '#ffffff' }}>
-              Subir CSV
+              Artistas
             </h1>
             
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
-              border: '2px dashed rgba(201, 165, 116, 0.4)',
-              borderRadius: '16px',
-              padding: '48px',
-              textAlign: 'center',
-              marginBottom: '32px'
-            }}>
-              <Upload size={48} color="#c9a574" style={{ margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#ffffff', marginBottom: '8px' }}>
-                Arrastra tus archivos CSV aquí
-              </h3>
-              <p style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '24px' }}>
-                O haz clic para seleccionar archivos
-              </p>
-              <input
-                type="file"
-                accept=".csv"
-                multiple
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-                id="csv-upload"
-              />
-              <label htmlFor="csv-upload">
-                <div style={{
-                  display: 'inline-block',
-                  padding: '12px 32px',
-                  background: 'linear-gradient(135deg, #c9a574 0%, #b8956a 100%)',
-                  borderRadius: '12px',
-                  color: '#fff',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}>
-                  Seleccionar archivos
-                </div>
-              </label>
-            </div>
-
-            {showChart && (
+            {/* Stats Summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
               <div style={{
                 background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
                 border: '1px solid rgba(201, 165, 116, 0.2)',
                 borderRadius: '16px',
-                padding: '32px'
+                padding: '20px'
               }}>
-                <h3 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '24px' }}>
-                  Evolución de Ventas
-                </h3>
-                
-                <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={salesData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(201, 165, 116, 0.1)" />
-                    <XAxis dataKey="mes" stroke="#AFB3B7" />
-                    <YAxis stroke="#AFB3B7" />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="ventas" stroke="#60a5fa" strokeWidth={3} />
-                    <Line type="monotone" dataKey="royalties" stroke="#c9a574" strokeWidth={3} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Total Artistas</div>
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#c9a574' }}>{artists.length}</div>
+              </div>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '20px'
+              }}>
+                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Revenue Total</div>
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#4ade80' }}>
+                  {formatEuro(artists.reduce((sum, a) => sum + a.totalRevenue, 0))}
+                </div>
+              </div>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '20px'
+              }}>
+                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Streams Totales</div>
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#60a5fa' }}>
+                  {artists.reduce((sum, a) => sum + a.totalStreams, 0).toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            {/* Artists Grid */}
+            {artists.length === 0 ? (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '48px',
+                textAlign: 'center'
+              }}>
+                <Users size={48} color="#c9a574" style={{ margin: '0 auto 16px' }} />
+                <p style={{ fontSize: '18px', color: '#AFB3B7', marginBottom: '8px' }}>No hay artistas aún</p>
+                <p style={{ fontSize: '14px', color: '#6b7280' }}>Sube un archivo CSV para crear artistas automáticamente</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+                {artists.map((artist) => (
+                  <div
+                    key={artist.id}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.1) 0%, rgba(42, 63, 63, 0.4) 100%)',
+                      border: '1px solid rgba(201, 165, 116, 0.2)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(201, 165, 116, 0.2)';
+                      e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.2)';
+                    }}
+                  >
+                    {/* Artist Photo */}
+                    <div style={{
+                      width: '100%',
+                      height: '200px',
+                      borderRadius: '12px',
+                      marginBottom: '16px',
+                      background: artist.photo 
+                        ? `url(${artist.photo}) center/cover`
+                        : 'linear-gradient(135deg, rgba(201, 165, 116, 0.2) 0%, rgba(42, 63, 63, 0.3) 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {!artist.photo && <Users size={48} color="#c9a574" />}
+                    </div>
+
+                    {/* Artist Name */}
+                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '12px' }}>
+                      {artist.name}
+                    </h3>
+
+                    {/* Stats */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: '#AFB3B7' }}>Revenue:</span>
+                        <span style={{ fontSize: '16px', fontWeight: '700', color: '#c9a574' }}>
+                          {formatEuro(artist.totalRevenue)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: '#AFB3B7' }}>Streams:</span>
+                        <span style={{ fontSize: '16px', fontWeight: '600', color: '#60a5fa' }}>
+                          {artist.totalStreams.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'Catálogo':
+        return (
+          <div>
+            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '24px', color: '#ffffff' }}>
+              Catálogo Musical
+            </h1>
+            
+            {/* Stats Summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '20px'
+              }}>
+                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Total Canciones</div>
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#c9a574' }}>{tracks.length}</div>
+              </div>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '20px'
+              }}>
+                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Revenue Total</div>
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#4ade80' }}>
+                  {formatEuro(tracks.reduce((sum, t) => sum + t.totalRevenue, 0))}
+                </div>
+              </div>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '20px'
+              }}>
+                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Streams Totales</div>
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#60a5fa' }}>
+                  {tracks.reduce((sum, t) => sum + t.totalStreams, 0).toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            {/* Tracks Table */}
+            {tracks.length === 0 ? (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '48px',
+                textAlign: 'center'
+              }}>
+                <Music size={48} color="#c9a574" style={{ margin: '0 auto 16px' }} />
+                <p style={{ fontSize: '18px', color: '#AFB3B7', marginBottom: '8px' }}>No hay canciones aún</p>
+                <p style={{ fontSize: '14px', color: '#6b7280' }}>Sube un archivo CSV para crear el catálogo automáticamente</p>
+              </div>
+            ) : (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '24px',
+                overflowX: 'auto'
+              }}>
+                {/* Table Header */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1.5fr 1.2fr 1fr 1fr 1.5fr',
+                  gap: '16px',
+                  padding: '12px 16px',
+                  background: 'rgba(201, 165, 116, 0.1)',
+                  borderRadius: '12px',
+                  marginBottom: '12px',
+                  borderBottom: '2px solid rgba(201, 165, 116, 0.3)'
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Canción</div>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Artista</div>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>ISRC</div>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Streams</div>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Revenue</div>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Plataformas</div>
+                </div>
+
+                {/* Table Rows */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {tracks.map((track, index) => (
+                    <div
+                      key={track.id}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '2fr 1.5fr 1.2fr 1fr 1fr 1.5fr',
+                        gap: '16px',
+                        padding: '16px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(201, 165, 116, 0.08)';
+                        e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.3)';
+                        e.currentTarget.style.transform = 'translateX(4px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }}
+                    >
+                      {/* Title */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '8px',
+                          background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.3) 0%, rgba(201, 165, 116, 0.1) 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <Disc size={20} color="#c9a574" />
+                        </div>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
+                          {track.title}
+                        </span>
+                      </div>
+
+                      {/* Artist */}
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ fontSize: '14px', color: '#AFB3B7' }}>
+                          {track.artistName}
+                        </span>
+                      </div>
+
+                      {/* ISRC */}
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {track.isrc ? (
+                          <code style={{
+                            fontSize: '12px',
+                            fontFamily: 'monospace',
+                            color: '#60a5fa',
+                            background: 'rgba(96, 165, 250, 0.1)',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(96, 165, 250, 0.2)'
+                          }}>
+                            {track.isrc}
+                          </code>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#6b7280' }}>N/A</span>
+                        )}
+                      </div>
+
+                      {/* Streams */}
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#4ade80' }}>
+                          {track.totalStreams.toLocaleString()}
+                        </span>
+                      </div>
+
+                      {/* Revenue */}
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#c9a574' }}>
+                          {formatEuro(track.totalRevenue)}
+                        </span>
+                      </div>
+
+                      {/* Platforms */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                        {track.platforms.slice(0, 3).map((platform, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'rgba(201, 165, 116, 0.1)',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(201, 165, 116, 0.2)',
+                              fontSize: '11px',
+                              color: '#c9a574',
+                              fontWeight: '500'
+                            }}
+                          >
+                            {platform}
+                          </div>
+                        ))}
+                        {track.platforms.length > 3 && (
+                          <div style={{
+                            padding: '4px 8px',
+                            background: 'rgba(96, 165, 250, 0.1)',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            color: '#60a5fa',
+                            fontWeight: '500'
+                          }}>
+                            +{track.platforms.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

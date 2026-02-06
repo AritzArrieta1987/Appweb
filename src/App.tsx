@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import LoginPanel from './components/LoginPanel';
 import DashboardSimple from './DashboardSimple';
+import { DataProvider } from './components/DataContext';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,5 +19,9 @@ export default function App() {
     return <LoginPanel onLoginSuccess={handleLoginSuccess} />;
   }
 
-  return <DashboardSimple onLogout={handleLogout} />;
+  return (
+    <DataProvider>
+      <DashboardSimple onLogout={handleLogout} />
+    </DataProvider>
+  );
 }
