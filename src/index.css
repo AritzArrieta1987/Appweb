@@ -8,6 +8,7 @@
       --tw-skew-x: skewX(0);
       --tw-skew-y: skewY(0);
       --tw-border-style: solid;
+      --tw-outline-style: solid;
       --tw-blur: initial;
       --tw-brightness: initial;
       --tw-contrast: initial;
@@ -370,12 +371,28 @@
     position: relative;
   }
 
+  .static {
+    position: static;
+  }
+
+  .block {
+    display: block;
+  }
+
   .flex {
     display: flex;
   }
 
   .grid {
     display: grid;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .inline {
+    display: inline;
   }
 
   .inline-block {
@@ -393,6 +410,11 @@
 
   .uppercase {
     text-transform: uppercase;
+  }
+
+  .outline {
+    outline-style: var(--tw-outline-style);
+    outline-width: 1px;
   }
 
   .blur {
@@ -595,6 +617,12 @@ div:hover > .card-actions {
 }
 
 @property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+
+@property --tw-outline-style {
   syntax: "*";
   inherits: false;
   initial-value: solid;
