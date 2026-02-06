@@ -2,9 +2,16 @@
 
 # ============================================
 # BIGARTIST ROYALTIES - Instalación Automática
+# Descarga desde GitHub y despliega automáticamente
 # ============================================
 
+# ⚠️ CONFIGURA TU REPOSITORIO AQUÍ:
+GITHUB_REPO="https://github.com/TU-USUARIO/TU-REPOSITORIO.git"
+
 echo "🚀 Instalando BIGARTIST ROYALTIES en app.bigartist.es..."
+
+# Instalar Git
+sudo apt install -y git
 
 # Actualizar sistema
 sudo apt update && sudo apt upgrade -y
@@ -46,6 +53,27 @@ sudo apt install -y nginx
 
 # Crear directorio del proyecto
 mkdir -p /var/www/bigartist
+cd /var/www/bigartist
+
+# Clonar repositorio desde GitHub
+echo "📦 Clonando repositorio desde GitHub..."
+git clone $GITHUB_REPO repo
+cd repo
+
+# Instalar dependencias del frontend
+echo "📦 Instalando dependencias del frontend..."
+npm install
+
+# Compilar frontend
+echo "🔨 Compilando frontend..."
+npm run build
+
+# Mover archivos compilados
+echo "📁 Moviendo archivos compilados..."
+mkdir -p /var/www/bigartist/frontend
+cp -r dist/* /var/www/bigartist/frontend/
+
+# Volver al directorio principal para crear backend
 cd /var/www/bigartist
 
 # Crear backend
@@ -146,16 +174,15 @@ sudo ln -sf /etc/nginx/sites-available/bigartist /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl restart nginx
 
-# Crear directorio frontend
-mkdir -p frontend
-
 echo ""
 echo "✅ ¡Instalación completada!"
 echo ""
-echo "📋 Próximos pasos:"
-echo "1. Compila tu frontend: npm run build"
-echo "2. Sube el contenido de dist/ a: /var/www/bigartist/frontend/"
-echo "3. Visita: http://app.bigartist.es"
-echo ""
+echo "🌐 Tu aplicación está corriendo en: http://app.bigartist.es"
 echo "🔐 Usuario: admin | Contraseña: admin123"
+echo ""
+echo "📝 Para actualizar el código en el futuro:"
+echo "   cd /var/www/bigartist/repo"
+echo "   git pull"
+echo "   npm run build"
+echo "   cp -r dist/* /var/www/bigartist/frontend/"
 echo ""

@@ -1,6 +1,9 @@
+#!/bin/bash
+
+# Script para desplegar el LoginPanel con el diseño exacto del preview
+
+cat > /var/www/bigartist/repo/src/components/LoginPanel.jsx << 'ENDOFFILE'
 import { useState } from 'react';
-import exampleImage from 'figma:asset/0a2a9faa1b59d5fa1e388a2eec5b08498dd7a493.png';
-import logoImage from 'figma:asset/aa0296e2522220bcfcda71f86c708cb2cbc616b9.png';
 
 // Iconos SVG inline
 const EyeIcon = () => (
@@ -17,31 +20,17 @@ const EyeOffIcon = () => (
   </svg>
 );
 
-interface LoginPanelProps {
-  onLoginSuccess: () => void;
-}
-
-export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
+export default function LoginPanel({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
 
-    // MODO DEMO - Login directo sin backend
-    if (email && password) {
-      console.log('✅ Login exitoso en modo demo');
-      localStorage.setItem('user', JSON.stringify({ email, role: 'admin' }));
-      onLoginSuccess();
-      return;
-    }
-
-    setError('Por favor ingresa email y contraseña');
-
-    /* PARA PRODUCCIÓN: Descomentar esto cuando tengas el backend corriendo
+    // PARA PRODUCCIÓN: Descomentar esto cuando tengas el backend corriendo
     try {
       const response = await fetch('https://app.bigartist.es/api/login', {
         method: 'POST',
@@ -53,15 +42,21 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
       
       if (data.success) {
         localStorage.setItem('user', JSON.stringify(data.user));
-        onLoginSuccess();
+        onLogin(email, password);
       } else {
         setError(data.message || 'Credenciales incorrectas');
       }
+      return;
     } catch (err) {
-      console.error('Error en login:', err);
-      setError('Error de conexión con el servidor');
+      console.log('Backend no disponible, usando modo demo');
     }
-    */
+
+    // MODO DEMO
+    if (email === 'admin@bigartist.es' && password === 'admin123') {
+      onLogin(email, password);
+    } else {
+      setError('Credenciales incorrectas');
+    }
   };
 
   return (
@@ -77,7 +72,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
       <div style={{
         position: 'absolute',
         inset: 0,
-        backgroundImage: `url(${exampleImage})`,
+        backgroundImage: 'url(/images/Oficina.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center 40%',
         opacity: 0.6,
@@ -98,7 +93,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
         position: 'absolute',
         inset: 0,
         background: 'rgba(32, 64, 64, 0.4)',
-        mixBlendMode: 'multiply' as const,
+        mixBlendMode: 'multiply',
         zIndex: 2
       }} />
 
@@ -121,7 +116,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
         }}>
           {/* Logo BIGARTIST */}
           <img 
-            src={logoImage} 
+            src="/images/Bamlogo.png" 
             alt="BIGARTIST" 
             className="logo-image"
             style={{
@@ -490,3 +485,27 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     </div>
   );
 }
+ENDOFFILE
+
+echo ""
+echo "✅ LoginPanel.jsx actualizado con código EXACTO del preview"
+echo "📦 Compilando..."
+
+cd /var/www/bigartist/repo
+npm run build
+
+echo "🚀 Desplegando..."
+sudo cp -r dist/* /var/www/bigartist/frontend/
+sudo chown -R www-data:www-data /var/www/bigartist/frontend/
+sudo systemctl reload nginx
+
+TIMESTAMP=$(date +%s)
+echo ""
+echo "✅ ¡DESPLEGADO! Código exacto del preview de Figma Make"
+echo "🌐 https://app.bigartist.es?v=$TIMESTAMP"
+echo ""
+echo "💡 Haz Cmd+Shift+R para limpiar caché"
+echo ""
+echo "📝 Credenciales demo:"
+echo "   Email: admin@bigartist.es"
+echo "   Password: admin123"
