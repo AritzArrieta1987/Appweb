@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Bell, BarChart3, Users, Music, FileText, Upload, Settings, LogOut, TrendingUp, DollarSign, Database, PieChart, Disc } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Bell, BarChart3, Users, Music, FileText, Upload, Settings, LogOut, TrendingUp, DollarSign, Database, PieChart, Disc, CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import logoImage from 'figma:asset/aa0296e2522220bcfcda71f86c708cb2cbc616b9.png';
 import backgroundImage from 'figma:asset/0a2a9faa1b59d5fa1e388a2eec5b08498dd7a493.png';
@@ -15,7 +15,12 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
   const { artists, tracks, dashboardData } = useData();
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications] = useState(3);
+  const [notifications, setNotifications] = useState([
+    { id: 1, type: 'success', title: 'CSV Procesado', message: 'Se han importado 15 canciones correctamente', time: 'Hace 5 min', read: false },
+    { id: 2, type: 'info', title: 'Nuevo Artista', message: 'Se ha añadido un nuevo artista al catálogo', time: 'Hace 1 hora', read: false },
+    { id: 3, type: 'warning', title: 'Actualización Pendiente', message: 'Hay datos pendientes de sincronizar', time: 'Hace 2 horas', read: false }
+  ]);
+  const notificationRef = useRef<HTMLDivElement>(null);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [showChart, setShowChart] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -58,6 +63,49 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
       window.removeEventListener('scroll', handleScroll);
     };
   }, [lastScrollY]);
+
+  // Cerrar notificaciones al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
+
+  // Función para marcar notificación como leída
+  const markAsRead = (id: number) => {
+    setNotifications(notifications.map(n => 
+      n.id === id ? { ...n, read: true } : n
+    ));
+  };
+
+  // Función para eliminar notificación
+  const deleteNotification = (id: number) => {
+    setNotifications(notifications.filter(n => n.id !== id));
+  };
+
+  // Obtener icono según tipo de notificación
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return { icon: CheckCircle, color: '#4ade80' };
+      case 'warning':
+        return { icon: AlertCircle, color: '#f59e0b' };
+      case 'error':
+        return { icon: AlertCircle, color: '#ef4444' };
+      default:
+        return { icon: Info, color: '#60a5fa' };
+    }
+  };
 
   const tabs = [
     { name: 'Dashboard', icon: BarChart3 },
@@ -980,44 +1028,211 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
           </div>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              style={{
-                width: isScrolled ? '36px' : '40px',
-                height: isScrolled ? '36px' : '40px',
-                borderRadius: '50%',
-                background: 'rgba(201, 165, 116, 0.1)',
-                border: '1px solid rgba(201, 165, 116, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#c9a574',
-                cursor: 'pointer',
-                position: 'relative',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <Bell size={isScrolled ? 16 : 18} />
-              {notifications > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '4px',
-                  right: '4px',
-                  width: '16px',
-                  height: '16px',
+            <div style={{ position: 'relative' }} ref={notificationRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                style={{
+                  width: isScrolled ? '36px' : '40px',
+                  height: isScrolled ? '36px' : '40px',
                   borderRadius: '50%',
-                  background: '#ef4444',
-                  fontSize: '10px',
-                  fontWeight: '700',
-                  color: '#fff',
+                  background: 'rgba(201, 165, 116, 0.1)',
+                  border: '1px solid rgba(201, 165, 116, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  color: '#c9a574',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <Bell size={isScrolled ? 16 : 18} />
+                {notifications.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '4px',
+                    right: '4px',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    background: '#ef4444',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {notifications.length}
+                  </div>
+                )}
+              </button>
+
+              {/* Notification Panel */}
+              {showNotifications && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 12px)',
+                  right: 0,
+                  width: '380px',
+                  maxHeight: '500px',
+                  background: 'linear-gradient(135deg, rgba(20, 35, 35, 0.98) 0%, rgba(15, 30, 30, 0.98) 100%)',
+                  border: '1px solid rgba(201, 165, 116, 0.3)',
+                  borderRadius: '16px',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+                  backdropFilter: 'blur(20px)',
+                  overflow: 'hidden',
+                  zIndex: 1000
                 }}>
-                  {notifications}
+                  {/* Header */}
+                  <div style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid rgba(201, 165, 116, 0.2)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#ffffff', margin: 0 }}>
+                      Notificaciones
+                    </h3>
+                    <div style={{ fontSize: '12px', color: '#AFB3B7' }}>
+                      {notifications.length} nuevas
+                    </div>
+                  </div>
+
+                  {/* Notifications List */}
+                  <div style={{
+                    maxHeight: '420px',
+                    overflowY: 'auto',
+                    overflowX: 'hidden'
+                  }}>
+                    {notifications.length === 0 ? (
+                      <div style={{
+                        padding: '48px 20px',
+                        textAlign: 'center',
+                        color: '#AFB3B7'
+                      }}>
+                        <Bell size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+                        <p style={{ fontSize: '14px' }}>No hay notificaciones</p>
+                      </div>
+                    ) : (
+                      notifications.map((notif) => {
+                        const { icon: IconComponent, color } = getNotificationIcon(notif.type);
+                        return (
+                          <div
+                            key={notif.id}
+                            style={{
+                              padding: '16px 20px',
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                              background: notif.read ? 'transparent' : 'rgba(201, 165, 116, 0.05)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              position: 'relative'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(201, 165, 116, 0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = notif.read ? 'transparent' : 'rgba(201, 165, 116, 0.05)';
+                            }}
+                            onClick={() => markAsRead(notif.id)}
+                          >
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
+                              {/* Icon */}
+                              <div style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '8px',
+                                background: `${color}15`,
+                                border: `1px solid ${color}40`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                              }}>
+                                <IconComponent size={18} color={color} />
+                              </div>
+
+                              {/* Content */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: '14px',
+                                  fontWeight: '600',
+                                  color: '#ffffff',
+                                  marginBottom: '4px'
+                                }}>
+                                  {notif.title}
+                                </div>
+                                <div style={{
+                                  fontSize: '13px',
+                                  color: '#AFB3B7',
+                                  marginBottom: '6px',
+                                  lineHeight: '1.4'
+                                }}>
+                                  {notif.message}
+                                </div>
+                                <div style={{
+                                  fontSize: '12px',
+                                  color: '#6b7280'
+                                }}>
+                                  {notif.time}
+                                </div>
+                              </div>
+
+                              {/* Delete Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteNotification(notif.id);
+                                }}
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '6px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: '#6b7280',
+                                  transition: 'all 0.2s ease',
+                                  flexShrink: 0
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                  e.currentTarget.style.color = '#ef4444';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                  e.currentTarget.style.color = '#6b7280';
+                                }}
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+
+                            {/* Unread Indicator */}
+                            {!notif.read && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '8px',
+                                transform: 'translateY(-50%)',
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                background: '#c9a574'
+                              }} />
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               )}
-            </button>
+            </div>
 
             <button
               onClick={onLogout}

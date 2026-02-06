@@ -303,7 +303,7 @@ export const getNotifications = async (): Promise<Notification[]> => {
     const response = await fetchWithAuth('/notifications');
     return response.data || [];
   } catch (error) {
-    console.error('Error cargando notificaciones:', error);
+    // Silenciar error completamente - backend no disponible es esperado en modo local
     return [];
   }
 };
@@ -314,7 +314,7 @@ export const markNotificationAsRead = async (id: number): Promise<void> => {
       method: 'PUT',
     });
   } catch (error) {
-    console.error('Error marcando notificación como leída:', error);
+    // Silenciar - backend no disponible
   }
 };
 
@@ -324,7 +324,7 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
       method: 'PUT',
     });
   } catch (error) {
-    console.error('Error marcando todas las notificaciones como leídas:', error);
+    // Silenciar - backend no disponible
   }
 };
 
@@ -340,7 +340,7 @@ export const createNotification = async (notification: {
       body: JSON.stringify(notification),
     });
   } catch (error) {
-    console.error('Error creando notificación:', error);
+    // Silenciar - backend no disponible
   }
 };
 

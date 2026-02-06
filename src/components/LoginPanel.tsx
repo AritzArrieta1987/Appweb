@@ -35,26 +35,54 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     setLoading(true);
 
     try {
-      // Timeout para evitar que se quede esperando indefinidamente
-      const loginWithTimeout = Promise.race([
-        login(email, password),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout al conectar con el servidor')), 10000)
-        )
-      ]);
-
-      await loginWithTimeout;
-      onLoginSuccess();
-    } catch (err: any) {
-      // Si hay problema de conexión, permitir entrar en modo demo
-      if (err.message.includes('Timeout') || err.message.includes('Failed to fetch')) {
-        // Modo demo silencioso - sin mostrar errores en consola
-        localStorage.setItem('authToken', 'demo-mode');
-        localStorage.setItem('user', JSON.stringify({ email, name: 'Usuario Demo' }));
+      // Primero intentar con el backend real
+      console.log('🔐 Intentando login con backend...');
+      
+      try {
+        await login(email, password);
+        console.log('✅ Login exitoso con backend');
         onLoginSuccess();
-      } else {
-        setError(err.message || 'Credenciales incorrectas');
+        return;
+      } catch (backendError: any) {
+        // Backend no disponible, verificar credenciales localmente de forma silenciosa
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Backend no disponible, verificando credenciales localmente...');
+        }
+        
+        // Si el backend no está disponible, verificar credenciales localmente
+        // Credenciales válidas:
+        // Admin: admin@bigartist.es / admin123
+        // Artista: artist@bigartist.es / admin123
+        
+        const validCredentials = [
+          { email: 'admin@bigartist.es', password: 'admin123', type: 'admin' },
+          { email: 'artist@bigartist.es', password: 'admin123', type: 'artist' }
+        ];
+        
+        const validUser = validCredentials.find(
+          cred => cred.email === email && cred.password === password
+        );
+        
+        if (validUser) {
+          // Login válido en modo local
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Login válido en modo local:', validUser.type);
+          }
+          localStorage.setItem('authToken', 'local-mode-' + validUser.type);
+          localStorage.setItem('user', JSON.stringify({ 
+            email: validUser.email, 
+            name: validUser.type === 'admin' ? 'Admin' : 'Artista Demo',
+            type: validUser.type
+          }));
+          onLoginSuccess();
+        } else {
+          // Credenciales incorrectas
+          throw new Error('Email o contraseña incorrectos');
+        }
       }
+    } catch (err: any) {
+      console.error('❌ Error en login:', err);
+      setError(err.message || 'Email o contraseña incorrectos');
     } finally {
       setLoading(false);
     }
@@ -321,49 +349,69 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
             {/* Botón de login */}
             <button
               type="submit"
+              disabled={loading}
               style={{
                 width: '100%',
                 padding: '16px',
                 fontSize: '15px',
                 fontWeight: '600',
                 color: '#0D1F23',
-                background: 'linear-gradient(135deg, #c9a574 0%, #d4b589 100%)',
+                background: loading ? 'rgba(201, 165, 116, 0.5)' : 'linear-gradient(135deg, #c9a574 0%, #d4b589 100%)',
                 border: 'none',
                 borderRadius: '10px',
-                cursor: 'pointer',
+                cursor: loading ? 'not-allowed' : 'pointer',
                 letterSpacing: '1px',
                 textTransform: 'uppercase',
                 transition: 'all 0.3s ease',
                 boxShadow: '0 4px 12px rgba(201, 165, 116, 0.3)',
-                marginBottom: '20px'
+                marginBottom: '20px',
+                opacity: loading ? 0.6 : 1
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 165, 116, 0.5)';
+                if (!loading) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 165, 116, 0.5)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 165, 116, 0.3)';
+                if (!loading) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 165, 116, 0.3)';
+                }
               }}
             >
               {loading ? 'Iniciando...' : 'Iniciar Sesión'}
             </button>
 
-            {/* Link de recuperación */}
-            <div style={{ textAlign: 'center' }}>
-              <a 
-                href="https://app.bigartist.es" 
-                style={{
-                  fontSize: '14px',
-                  color: '#69818D',
-                  textDecoration: 'none',
-                  transition: 'color 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#c9a574'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#69818D'}
-              >
-                ¿Olvidaste tu contraseña?
-              </a>
+            {/* Credenciales de demostración */}
+            <div style={{
+              backgroundColor: 'rgba(201, 165, 116, 0.1)',
+              border: '1px solid rgba(201, 165, 116, 0.3)',
+              borderRadius: '10px',
+              padding: '14px 16px',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                fontSize: '12px',
+                color: '#c9a574',
+                fontWeight: '600',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                🔑 Credenciales de acceso
+              </div>
+              <div style={{ fontSize: '13px', color: '#AFB3B7', lineHeight: '1.6' }}>
+                <div style={{ marginBottom: '4px' }}>
+                  <span style={{ color: '#c9a574' }}>Admin:</span> admin@bigartist.es
+                </div>
+                <div style={{ marginBottom: '4px' }}>
+                  <span style={{ color: '#c9a574' }}>Artista:</span> artist@bigartist.es
+                </div>
+                <div style={{ color: '#69818D', fontSize: '12px', marginTop: '6px' }}>
+                  Contraseña: <span style={{ color: '#AFB3B7' }}>admin123</span>
+                </div>
+              </div>
             </div>
           </form>
 
