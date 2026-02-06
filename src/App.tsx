@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import LoginPanel from './components/LoginPanel';
 import DashboardSimple from './DashboardSimple';
+import ArtistPortal from './components/ArtistPortal';
 import { DataProvider, useData } from './components/DataContext';
 
 // Componente interno para manejar la vista según el tipo de usuario
 function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const { artists, tracks } = useData();
   const [userType, setUserType] = useState<'admin' | 'artist' | null>(null);
+  const [artistData, setArtistData] = useState<any>(null);
 
   useEffect(() => {
     // Obtener datos del usuario desde localStorage
@@ -21,6 +23,35 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
             setUserType('admin');
           } else {
             setUserType('artist');
+            
+            // Buscar los datos del artista por email
+            const artist = artists.find(a => a.email === user.email);
+            if (artist) {
+              const artistTracks = tracks.filter(t => t.artistId === artist.id);
+              
+              // Calcular platform breakdown para el artista
+              const platformBreakdown: { [key: string]: number } = {};
+              artistTracks.forEach(track => {
+                track.platforms.forEach(platform => {
+                  if (!platformBreakdown[platform]) {
+                    platformBreakdown[platform] = 0;
+                  }
+                  platformBreakdown[platform] += track.totalRevenue / track.platforms.length;
+                });
+              });
+              
+              setArtistData({
+                id: artist.id,
+                name: artist.name,
+                email: artist.email,
+                photo: artist.photo,
+                totalRevenue: artist.totalRevenue,
+                totalStreams: artist.totalStreams,
+                tracks: artistTracks,
+                monthlyData: [], // Esto vendría del backend en producción
+                platformBreakdown
+              });
+            }
           }
         } else {
           // Por defecto, cualquier otro email es admin
@@ -31,7 +62,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
         setUserType('admin');
       }
     }
-  }, [artists]);
+  }, [artists, tracks]);
 
   // Mientras se carga, mostrar loading
   if (!userType) {
@@ -51,43 +82,9 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
     );
   }
 
-  // Si es artista, mostrar mensaje temporal
+  // Si es artista, mostrar ArtistPortal
   if (userType === 'artist') {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f1616 0%, #1a2626 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        gap: '20px',
-        color: '#ffffff',
-        padding: '40px'
-      }}>
-        <div style={{ fontSize: '24px', fontWeight: '700', color: '#c9a574' }}>
-          Portal de Artista
-        </div>
-        <div style={{ fontSize: '16px', color: '#AFB3B7' }}>
-          En construcción...
-        </div>
-        <button
-          onClick={onLogout}
-          style={{
-            padding: '12px 24px',
-            background: '#c9a574',
-            border: 'none',
-            borderRadius: '10px',
-            color: '#0D1F23',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}
-        >
-          Cerrar Sesión
-        </button>
-      </div>
-    );
+    return <ArtistPortal onLogout={onLogout} artistData={artistData} />;
   }
 
   // Si es admin, mostrar dashboard completo
