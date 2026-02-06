@@ -9,10 +9,8 @@
 // CONFIGURACIÓN
 // ===============================================
 
-// Cambiar esta URL cuando despliegues en producción
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://app.bigartist.es/api'  // URL de producción
-  : 'http://localhost:3000/api';     // URL de desarrollo
+// URL del backend en el servidor de producción
+const API_BASE_URL = 'http://94.143.141.241/api';
 
 // ===============================================
 // TIPOS DE DATOS
@@ -284,6 +282,66 @@ export const updateContract = async (id: number, contract: any) => {
     method: 'PUT',
     body: JSON.stringify(contract),
   });
+};
+
+// ===============================================
+// NOTIFICACIONES
+// ===============================================
+
+export interface Notification {
+  id: number;
+  user_id: number;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'csv_upload';
+  is_read: boolean;
+  created_at: string;
+}
+
+export const getNotifications = async (): Promise<Notification[]> => {
+  try {
+    const response = await fetchWithAuth('/notifications');
+    return response.data || [];
+  } catch (error) {
+    console.error('Error cargando notificaciones:', error);
+    return [];
+  }
+};
+
+export const markNotificationAsRead = async (id: number): Promise<void> => {
+  try {
+    await fetchWithAuth(`/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  } catch (error) {
+    console.error('Error marcando notificación como leída:', error);
+  }
+};
+
+export const markAllNotificationsAsRead = async (): Promise<void> => {
+  try {
+    await fetchWithAuth('/notifications/read-all', {
+      method: 'PUT',
+    });
+  } catch (error) {
+    console.error('Error marcando todas las notificaciones como leídas:', error);
+  }
+};
+
+export const createNotification = async (notification: {
+  user_id?: number;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'csv_upload';
+}): Promise<void> => {
+  try {
+    await fetchWithAuth('/notifications', {
+      method: 'POST',
+      body: JSON.stringify(notification),
+    });
+  } catch (error) {
+    console.error('Error creando notificación:', error);
+  }
 };
 
 // ===============================================

@@ -4,6 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import logoImage from 'figma:asset/aa0296e2522220bcfcda71f86c708cb2cbc616b9.png';
 import backgroundImage from 'figma:asset/0a2a9faa1b59d5fa1e388a2eec5b08498dd7a493.png';
 import CSVUploader from './components/CSVUploader';
+import ArtistPanel from './components/ArtistPanel';
 import { useData } from './components/DataContext';
 
 interface DashboardProps {
@@ -20,6 +21,7 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [selectedArtist, setSelectedArtist] = useState<any>(null);
 
   // Función para formatear importes en formato europeo
   const formatEuro = (amount: number): string => {
@@ -136,6 +138,18 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
   };
 
   const renderContent = () => {
+    // Si hay un artista seleccionado, mostrar el ArtistPanel
+    if (selectedArtist) {
+      const artistTracks = tracks.filter(t => t.artistId === selectedArtist.id);
+      return (
+        <ArtistPanel 
+          artist={selectedArtist} 
+          tracks={artistTracks}
+          onBack={() => setSelectedArtist(null)}
+        />
+      );
+    }
+
     switch (activeTab) {
       case 'Dashboard':
         return (
@@ -595,6 +609,7 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
                       e.currentTarget.style.boxShadow = 'none';
                       e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.2)';
                     }}
+                    onClick={() => setSelectedArtist(artist)}
                   >
                     {/* Artist Photo */}
                     <div style={{
@@ -638,7 +653,7 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
             )}
           </div>
         );
-
+      
       case 'Catálogo':
         return (
           <div>
