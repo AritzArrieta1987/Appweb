@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, BarChart3, Music, FileText, DollarSign, LogOut, Disc, CheckCircle, AlertCircle, Info, X, TrendingUp, Calendar, Camera, Upload as UploadIcon } from 'lucide-react';
+import { Bell, BarChart3, Music, FileText, DollarSign, LogOut, Disc, CheckCircle, AlertCircle, Info, X, TrendingUp, Calendar, Camera, Upload as UploadIcon, Settings } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import logoImage from 'figma:asset/aa0296e2522220bcfcda71f86c708cb2cbc616b9.png';
 import backgroundImage from 'figma:asset/0a2a9faa1b59d5fa1e388a2eec5b08498dd7a493.png';
@@ -128,7 +128,8 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
     { name: 'Dashboard', icon: BarChart3 },
     { name: 'Mis Canciones', icon: Music },
     { name: 'Royalties', icon: DollarSign },
-    { name: 'Contratos', icon: FileText }
+    { name: 'Contratos', icon: FileText },
+    { name: 'Configuración', icon: Settings }
   ];
 
   // Datos de ejemplo (cuando artistData no esté disponible)
@@ -532,6 +533,177 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
           </div>
         );
       
+      case 'Configuración':
+        return (
+          <div>
+            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px', color: '#ffffff' }}>
+              Configuración
+            </h1>
+            <p style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '32px' }}>
+              Gestiona tu cuenta y preferencias
+            </p>
+            
+            {/* Profile Settings */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.15) 0%, rgba(42, 63, 63, 0.4) 100%)',
+              border: '2px solid rgba(201, 165, 116, 0.3)',
+              borderRadius: '20px',
+              padding: '28px',
+              backdropFilter: 'blur(10px)',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Settings size={24} color="#c9a574" />
+                Información del Perfil
+              </h2>
+              
+              <div style={{ display: 'grid', gap: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#AFB3B7', marginBottom: '8px' }}>
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    value={data.name}
+                    readOnly
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(201, 165, 116, 0.2)',
+                      borderRadius: '10px',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#AFB3B7', marginBottom: '8px' }}>
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={data.email}
+                    readOnly
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(201, 165, 116, 0.2)',
+                      borderRadius: '10px',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Security Section */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+              border: '1px solid rgba(201, 165, 116, 0.2)',
+              borderRadius: '16px',
+              padding: '28px',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <AlertCircle size={24} color="#c9a574" />
+                Seguridad
+              </h2>
+              
+              <button
+                style={{
+                  padding: '12px 24px',
+                  background: 'rgba(201, 165, 116, 0.2)',
+                  border: '1px solid rgba(201, 165, 116, 0.4)',
+                  borderRadius: '10px',
+                  color: '#c9a574',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(201, 165, 116, 0.3)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(201, 165, 116, 0.2)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Cambiar Contraseña
+              </button>
+            </div>
+
+            {/* Notification Preferences */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+              border: '1px solid rgba(201, 165, 116, 0.2)',
+              borderRadius: '16px',
+              padding: '28px'
+            }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Bell size={24} color="#c9a574" />
+                Preferencias de Notificaciones
+              </h2>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {[
+                  { label: 'Notificaciones de pagos', description: 'Recibe alertas cuando se procesen tus pagos' },
+                  { label: 'Reportes mensuales', description: 'Recibe tu reporte mensual de royalties' },
+                  { label: 'Actualizaciones del sistema', description: 'Mantente informado sobre nuevas funciones' }
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.05)'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff', marginBottom: '4px' }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#AFB3B7' }}>
+                        {item.description}
+                      </div>
+                    </div>
+                    <div style={{
+                      width: '48px',
+                      height: '26px',
+                      borderRadius: '13px',
+                      background: 'rgba(201, 165, 116, 0.3)',
+                      border: '2px solid rgba(201, 165, 116, 0.5)',
+                      position: 'relative',
+                      cursor: 'pointer'
+                    }}>
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: '#c9a574',
+                        position: 'absolute',
+                        right: '2px',
+                        top: '2px',
+                        transition: 'all 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      
       default:
         return (
           <div>
@@ -910,10 +1082,10 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: '300px',
+                height: '350px',
                 background: 'linear-gradient(180deg, transparent 0%, rgba(19, 46, 53, 0.3) 30%, rgba(32, 64, 64, 0.6) 60%, rgba(42, 63, 63, 0.85) 85%, rgba(42, 63, 63, 0.95) 100%)',
                 filter: 'blur(35px)',
-                transform: 'translateY(50px)',
+                transform: 'translateY(100px)',
                 pointerEvents: 'none'
               }} />
               
