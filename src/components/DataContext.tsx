@@ -122,19 +122,83 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setDashboardData(dashboardStats);
       
     } catch (error: any) {
-      // Sin conexión a la API, dejar arrays vacíos
-      setArtists([]);
-      setTracks([]);
+      // Sin conexión a la API, añadir datos de prueba
+      setArtists([
+        {
+          id: 1,
+          name: 'Artista Demo',
+          email: 'demo@bigartist.es',
+          phone: '+34 600 000 000',
+          photo: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop',
+          totalRevenue: 15420.50,
+          totalStreams: 234567,
+          trackCount: 12
+        }
+      ]);
+      
+      setTracks([
+        {
+          id: 1,
+          title: 'Midnight Dreams',
+          artistName: 'Artista Demo',
+          artistId: 1,
+          isrc: 'USRC12345678',
+          upc: '123456789012',
+          totalRevenue: 3250.75,
+          totalStreams: 45678,
+          platforms: ['Spotify', 'Apple Music', 'YouTube'],
+          audioUrl: ''
+        },
+        {
+          id: 2,
+          title: 'Summer Vibes',
+          artistName: 'Artista Demo',
+          artistId: 1,
+          isrc: 'USRC87654321',
+          upc: '210987654321',
+          totalRevenue: 4120.30,
+          totalStreams: 67890,
+          platforms: ['Spotify', 'Deezer', 'Tidal'],
+          audioUrl: ''
+        },
+        {
+          id: 3,
+          title: 'Urban Nights',
+          artistName: 'Artista Demo',
+          artistId: 1,
+          isrc: 'USRC11223344',
+          upc: '334455667788',
+          totalRevenue: 2890.45,
+          totalStreams: 38999,
+          platforms: ['Apple Music', 'Amazon Music'],
+          audioUrl: ''
+        }
+      ]);
+      
       setDashboardData({
-        totalRevenue: 0,
-        totalStreams: 0,
-        artistCount: 0,
-        trackCount: 0,
-        platformBreakdown: {},
-        monthlyData: []
+        totalRevenue: 15420.50,
+        totalStreams: 234567,
+        artistCount: 1,
+        trackCount: 3,
+        platformBreakdown: {
+          'Spotify': 4500.00,
+          'Apple Music': 3800.50,
+          'YouTube': 2100.00,
+          'Deezer': 1520.00,
+          'Amazon Music': 1800.00,
+          'Tidal': 1700.00
+        },
+        monthlyData: [
+          { month: 'Ene', revenue: 1200.50, streams: 18000 },
+          { month: 'Feb', revenue: 1450.75, streams: 22000 },
+          { month: 'Mar', revenue: 1680.30, streams: 25000 },
+          { month: 'Abr', revenue: 1920.45, streams: 28500 },
+          { month: 'May', revenue: 2150.80, streams: 31000 },
+          { month: 'Jun', revenue: 2580.90, streams: 35567 }
+        ]
       });
       
-      console.log('⚠️ No se pudo conectar a la API. Esperando datos reales.');
+      console.log('⚠️ No se pudo conectar a la API. Usando datos de prueba.');
     } finally {
       setLoading(false);
     }

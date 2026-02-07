@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, BarChart3, Users, Music, FileText, Upload, Settings, LogOut, TrendingUp, DollarSign, Database, PieChart, Disc, CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { Bell, BarChart3, Users, Music, FileText, Upload, Settings, LogOut, TrendingUp, DollarSign, Database, PieChart, Disc, CheckCircle, AlertCircle, Info, X, ArrowLeft } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import logoImage from 'figma:asset/aa0296e2522220bcfcda71f86c708cb2cbc616b9.png';
 import backgroundImage from 'figma:asset/0a2a9faa1b59d5fa1e388a2eec5b08498dd7a493.png';
 import CSVUploader from './components/CSVUploader';
 import ArtistPanel from './components/ArtistPanel';
+import ArtistPortal from './components/ArtistPortal';
 import { useData } from './components/DataContext';
 
 interface DashboardProps {
@@ -186,18 +187,6 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
   };
 
   const renderContent = () => {
-    // Si hay un artista seleccionado, mostrar el ArtistPanel
-    if (selectedArtist) {
-      const artistTracks = tracks.filter(t => t.artistId === selectedArtist.id);
-      return (
-        <ArtistPanel 
-          artist={selectedArtist} 
-          tracks={artistTracks}
-          onBack={() => setSelectedArtist(null)}
-        />
-      );
-    }
-
     switch (activeTab) {
       case 'Dashboard':
         return (
@@ -585,41 +574,6 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
             <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '24px', color: '#ffffff' }}>
               Artistas
             </h1>
-            
-            {/* Stats Summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
-                border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '16px',
-                padding: '20px'
-              }}>
-                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Total Artistas</div>
-                <div style={{ fontSize: '32px', fontWeight: '700', color: '#c9a574' }}>{artists.length}</div>
-              </div>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
-                border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '16px',
-                padding: '20px'
-              }}>
-                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Revenue Total</div>
-                <div style={{ fontSize: '32px', fontWeight: '700', color: '#4ade80' }}>
-                  {formatEuro(artists.reduce((sum, a) => sum + a.totalRevenue, 0))}
-                </div>
-              </div>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
-                border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '16px',
-                padding: '20px'
-              }}>
-                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Streams Totales</div>
-                <div style={{ fontSize: '32px', fontWeight: '700', color: '#60a5fa' }}>
-                  {artists.reduce((sum, a) => sum + a.totalStreams, 0).toLocaleString()}
-                </div>
-              </div>
-            </div>
 
             {/* Artists Grid */}
             {artists.length === 0 ? (
@@ -928,6 +882,41 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
         );
     }
   };
+
+  // Si hay un artista seleccionado, mostrar solo el ArtistPortal (sin el layout del dashboard)
+  if (selectedArtist) {
+    const artistTracks = tracks.filter(t => t.artistId === selectedArtist.id);
+    
+    // Calcular platform breakdown para el artista
+    const platformBreakdown: { [key: string]: number } = {};
+    artistTracks.forEach(track => {
+      track.platforms.forEach(platform => {
+        if (!platformBreakdown[platform]) {
+          platformBreakdown[platform] = 0;
+        }
+        platformBreakdown[platform] += track.totalRevenue / track.platforms.length;
+      });
+    });
+    
+    const artistData = {
+      id: selectedArtist.id,
+      name: selectedArtist.name,
+      email: selectedArtist.email || '',
+      photo: selectedArtist.photo,
+      totalRevenue: selectedArtist.totalRevenue,
+      totalStreams: selectedArtist.totalStreams,
+      tracks: artistTracks,
+      monthlyData: dashboardData.monthlyData,
+      platformBreakdown
+    };
+    
+    return (
+      <ArtistPortal 
+        onLogout={() => setSelectedArtist(null)}
+        artistData={artistData}
+      />
+    );
+  }
 
   return (
     <div style={{
