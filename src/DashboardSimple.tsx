@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell, BarChart3, Users, Music, FileText, Upload, Settings, LogOut, TrendingUp, DollarSign, Database, PieChart, Disc, CheckCircle, AlertCircle, Info, X, ArrowLeft, Camera, Grid3x3, List, Play, Pause, UploadCloud, Clock, Plus, Edit2, Trash2, Calendar, Percent, Eye, FileSignature, User, Mail, Phone, Globe, MapPin, Lock, Shield, Save, Volume2, VolumeX, Wallet, ArrowUpRight, ArrowDownRight, Download, Filter } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar } from 'recharts';
 import logoImage from 'figma:asset/aa0296e2522220bcfcda71f86c708cb2cbc616b9.png';
 import backgroundImage from 'figma:asset/0a2a9faa1b59d5fa1e388a2eec5b08498dd7a493.png';
 import CSVUploader from './components/CSVUploader';
@@ -404,40 +404,120 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
                 flexDirection: 'column',
                 gap: '24px'
               }}>
-                {/* Average Revenue per Artist */}
-                <div>
-                  <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px' }}>
+                {/* Average Revenue per Artist - Más oscuro arriba */}
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  {/* Gráfico de barras difuminado dentro de Beneficios de BAM */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    opacity: 0.15,
+                    pointerEvents: 'none',
+                    zIndex: 0
+                  }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { value: 45 },
+                          { value: 52 },
+                          { value: 38 },
+                          { value: 65 },
+                          { value: 48 },
+                          { value: 72 },
+                          { value: 58 },
+                          { value: 68 }
+                        ]}
+                        margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                      >
+                        <Bar 
+                          dataKey="value" 
+                          fill="url(#bamBarGradient)"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <defs>
+                          <linearGradient id="bamBarGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#c9a574" stopOpacity={0.5} />
+                            <stop offset="100%" stopColor="#c9a574" stopOpacity={0.1} />
+                          </linearGradient>
+                        </defs>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '8px', fontWeight: '600', position: 'relative', zIndex: 2 }}>
                     Beneficios de Bam
                   </p>
-                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#c9a574', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#c9a574', marginBottom: '4px', textShadow: '0 2px 4px rgba(0,0,0,0.3)', position: 'relative', zIndex: 2 }}>
                     €{artists.reduce((sum, artist) => {
                       const contract = contracts.find(c => c.artistId === artist.id);
                       const bamPercentage = contract ? (100 - contract.percentage) / 100 : 0.30;
                       return sum + ((artist.totalRevenue || 0) * bamPercentage);
                     }, 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
-                  <p style={{ fontSize: '12px', color: '#4ade80' }}>
+                  <p style={{ fontSize: '12px', color: '#4ade80', fontWeight: '500', position: 'relative', zIndex: 2 }}>
                     <ArrowUpRight size={14} style={{ display: 'inline', marginRight: '4px' }} />
                     Según porcentajes de contratos
                   </p>
                 </div>
 
                 {/* Divider */}
-                <div style={{ height: '1px', background: 'rgba(201, 165, 116, 0.15)' }} />
+                <div style={{ height: '1px', background: 'rgba(201, 165, 116, 0.15)', position: 'relative', zIndex: 1 }} />
 
-                {/* Total Streams */}
-                <div>
-                  <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px' }}>
+                {/* Total Streams - Más gris abajo */}
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  {/* Gráfico de barras difuminado dentro de Beneficios de Artistas */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                    zIndex: 0
+                  }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { value: 38 },
+                          { value: 55 },
+                          { value: 42 },
+                          { value: 58 },
+                          { value: 51 },
+                          { value: 65 },
+                          { value: 48 },
+                          { value: 60 }
+                        ]}
+                        margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                      >
+                        <Bar 
+                          dataKey="value" 
+                          fill="url(#artistBarGradient)"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <defs>
+                          <linearGradient id="artistBarGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#999999" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#999999" stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)', marginBottom: '8px', fontWeight: '400', position: 'relative', zIndex: 2 }}>
                     Beneficio de Artistas
                   </p>
-                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#c9a574', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: 'rgba(201, 165, 116, 0.7)', marginBottom: '4px', position: 'relative', zIndex: 2 }}>
                     €{artists.reduce((sum, artist) => {
                       const contract = contracts.find(c => c.artistId === artist.id);
                       const artistPercentage = contract ? contract.percentage / 100 : 0.70;
                       return sum + ((artist.totalRevenue || 0) * artistPercentage);
                     }, 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
-                  <p style={{ fontSize: '12px', color: '#4ade80' }}>
+                  <p style={{ fontSize: '12px', color: 'rgba(74, 222, 128, 0.7)', position: 'relative', zIndex: 2 }}>
                     <ArrowUpRight size={14} style={{ display: 'inline', marginRight: '4px' }} />
                     Según porcentajes de contratos
                   </p>
@@ -606,7 +686,7 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
                         </span>
                       </div>
                     </div>
-                    <div style={{ flexGrow: 1, width: '100%' }}>
+                    <div style={{ flexGrow: 1, width: '100%', minHeight: '300px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={[
