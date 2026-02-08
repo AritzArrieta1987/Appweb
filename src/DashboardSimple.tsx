@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, BarChart3, Users, Music, FileText, Upload, Settings, LogOut, TrendingUp, DollarSign, Database, PieChart, Disc, CheckCircle, AlertCircle, Info, X, ArrowLeft } from 'lucide-react';
+import { Bell, BarChart3, Users, Music, FileText, Upload, Settings, LogOut, TrendingUp, DollarSign, Database, PieChart, Disc, CheckCircle, AlertCircle, Info, X, ArrowLeft, Camera, Grid3x3, List, Play, Pause, UploadCloud, Clock, Plus, Edit2, Trash2, Calendar, Percent, Eye, FileSignature, User, Mail, Phone, Globe, MapPin, Lock, Shield, Save, Volume2, VolumeX, Wallet, ArrowUpRight, ArrowDownRight, Download, Filter } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import logoImage from 'figma:asset/aa0296e2522220bcfcda71f86c708cb2cbc616b9.png';
 import backgroundImage from 'figma:asset/0a2a9faa1b59d5fa1e388a2eec5b08498dd7a493.png';
 import CSVUploader from './components/CSVUploader';
+import { ConfigurationPanel } from './components/ConfigurationPanel';
+import { FinancesPanel } from './components/FinancesPanel';
 import ArtistPanel from './components/ArtistPanel';
 import ArtistPortal from './components/ArtistPortal';
 import { useData } from './components/DataContext';
@@ -28,6 +30,42 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [selectedArtist, setSelectedArtist] = useState<any>(null);
+  const [localArtists, setLocalArtists] = useState<any[]>([]);
+  const [catalogViewMode, setCatalogViewMode] = useState<'grid' | 'list'>('grid');
+  const [playingTrackId, setPlayingTrackId] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [showContractModal, setShowContractModal] = useState(false);
+  const [editingContract, setEditingContract] = useState<any | null>(null);
+  const [selectedContractView, setSelectedContractView] = useState<any | null>(null);
+
+  // Sincronizar artistas locales con los del contexto
+  useEffect(() => {
+    setLocalArtists(artists);
+  }, [artists]);
+
+  // Cargar contratos (temporal - luego desde backend)
+  useEffect(() => {
+    // TODO: Cargar desde backend con api.getContracts()
+    if (artists.length > 0) {
+      const mockContracts = artists.map((artist, index) => ({
+        id: index + 1,
+        artistId: artist.id,
+        artistName: artist.name,
+        artistPhoto: artist.photo,
+        percentage: index === 0 ? 70 : 60,
+        startDate: '2024-01-01',
+        endDate: '2026-12-31',
+        status: 'active', // active, pending, expired
+        type: 'Exclusivo', // Exclusivo, No Exclusivo
+        territory: 'Mundial',
+        advancePayment: index === 0 ? 5000 : 3000,
+        terms: 'Contrato de distribución musical con participación en royalties de streaming y ventas digitales.',
+        createdAt: '2024-01-01'
+      }));
+      setContracts(mockContracts);
+    }
+  }, [artists]);
 
   // Función para formatear importes en formato europeo
   const formatEuro = (amount: number): string => {
@@ -35,6 +73,98 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }) + '€';
+  };
+
+  // Función para reproducir/pausar audio
+  const handlePlayPause = (trackId: number, audioUrl?: string) => {
+    if (!audioUrl) return;
+
+    if (playingTrackId === trackId) {
+      // Pausar
+      audioRef.current?.pause();
+      setPlayingTrackId(null);
+    } else {
+      // Reproducir
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.play();
+      setPlayingTrackId(trackId);
+      
+      // Cuando termine, resetear
+      audioRef.current.onended = () => {
+        setPlayingTrackId(null);
+      };
+    }
+  };
+
+  // Función para subir audio a una canción
+  const handleAudioUpload = async (trackId: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const audioUrl = reader.result as string;
+        
+        // TODO: Guardar en backend
+        // await api.updateTrackAudio(trackId, audioUrl);
+        
+        // Actualizar localmente (temporal)
+        console.log(`Audio subido para track ${trackId}:`, audioUrl.substring(0, 50) + '...');
+        
+        // Mostrar notificación
+        setNotifications(prev => [{
+          id: Date.now(),
+          type: 'success',
+          title: 'Audio Subido',
+          message: 'El audio se ha subido correctamente',
+          time: 'Ahora',
+          read: false
+        }, ...prev]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Función para cambiar la foto del artista
+  const handlePhotoChange = (artistId: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageUrl = reader.result as string;
+        // Actualizar artista localmente
+        const updatedArtists = localArtists.map(artist => 
+          artist.id === artistId ? { ...artist, photo: imageUrl } : artist
+        );
+        setLocalArtists(updatedArtists);
+        
+        // Si el artista seleccionado es el que se está editando, actualizar también
+        if (selectedArtist?.id === artistId) {
+          setSelectedArtist((prev: any) => ({ ...prev, photo: imageUrl }));
+        }
+        
+        // Mostrar notificación de éxito
+        setNotifications(prev => [
+          {
+            id: Date.now(),
+            type: 'success',
+            title: 'Foto Actualizada',
+            message: `La foto de ${localArtists.find(a => a.id === artistId)?.name} se ha actualizado correctamente`,
+            time: 'Ahora',
+            read: false
+          },
+          ...prev
+        ]);
+        
+        // Aquí podrías hacer la llamada al backend para guardar la foto
+        // await api.updateArtistPhoto(artistId, imageUrl);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Detectar scroll para contraer y ocultar header
@@ -110,6 +240,7 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
 
   const tabs = [
     { name: 'Dashboard', icon: BarChart3 },
+    { name: 'Finanzas', icon: Wallet },
     { name: 'Artistas', icon: Users },
     { name: 'Catálogo', icon: Music },
     { name: 'Contratos', icon: FileText },
@@ -190,383 +321,815 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
     switch (activeTab) {
       case 'Dashboard':
         return (
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '24px', color: '#ffffff' }}>
-              Dashboard
-            </h1>
-            
-            {/* Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-              {[
-                { title: 'Total Royalties', value: formatEuro(dashboardData.totalRevenue), change: '+0%', color: '#c9a574' },
-                { title: 'Artistas Activos', value: dashboardData.artistCount.toString(), change: `+${dashboardData.artistCount}`, color: '#4ade80' },
-                { title: 'Canciones', value: dashboardData.trackCount.toString(), change: `+${dashboardData.trackCount}`, color: '#60a5fa' },
-                { title: 'Total Streams', value: dashboardData.totalStreams.toLocaleString(), change: `+${dashboardData.totalStreams.toLocaleString()}`, color: '#f87171' }
-              ].map((stat, i) => (
-                <div key={i} style={{
-                  background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
-                  border: '1px solid rgba(201, 165, 116, 0.2)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px', fontWeight: '500' }}>
-                    {stat.title}
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', marginBottom: '8px' }}>
-                    {stat.value}
-                  </div>
-                  <div style={{ fontSize: '13px', color: stat.color, fontWeight: '600' }}>
-                    {stat.change}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Two Column Layout: CSV Info + DSP Analytics */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-              
-              {/* Left Column: CSV Upload Analysis */}
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.15) 0%, rgba(42, 63, 63, 0.4) 100%)',
-                border: '2px solid rgba(201, 165, 116, 0.3)',
-                borderRadius: '20px',
-                padding: '28px',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 8px 32px rgba(201, 165, 116, 0.1)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #c9a574 0%, #b8956a 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 16px rgba(201, 165, 116, 0.3)'
-                  }}>
-                    <Database size={24} color="#fff" />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '2px' }}>
-                      CSV Analysis
-                    </h2>
-                    <p style={{ fontSize: '13px', color: '#AFB3B7' }}>
-                      Archivos procesados recientes
-                    </p>
-                  </div>
-                </div>
-
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={csvLineData}>
-                    <XAxis dataKey="mes" stroke="#AFB3B7" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#AFB3B7" style={{ fontSize: '12px' }} />
-                    <Tooltip 
-                      formatter={(value: number) => [`€${value}`, 'Revenue']}
-                      contentStyle={{
-                        background: 'rgba(30, 47, 47, 0.95)',
-                        border: '1px solid rgba(201, 165, 116, 0.3)',
-                        borderRadius: '8px',
-                        color: '#fff'
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke="#c9a574" 
-                      strokeWidth={3}
-                      dot={{ fill: '#c9a574', r: 5 }}
-                      activeDot={{ r: 7 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Right Column: DSP Analytics */}
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.15) 0%, rgba(42, 63, 63, 0.4) 100%)',
-                border: '2px solid rgba(201, 165, 116, 0.3)',
-                borderRadius: '20px',
-                padding: '28px',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 8px 32px rgba(201, 165, 116, 0.1)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #c9a574 0%, #b8956a 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 16px rgba(201, 165, 116, 0.3)'
-                  }}>
-                    <BarChart3 size={24} color="#fff" />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '2px' }}>
-                      DSP Analytics
-                    </h2>
-                    <p style={{ fontSize: '13px', color: '#AFB3B7' }}>
-                      Digital Service Providers
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                  <ResponsiveContainer width="50%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={dspChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={75}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={(entry) => {
-                          const total = dspChartData.reduce((sum, item) => sum + item.value, 0);
-                          const percent = ((entry.value / total) * 100).toFixed(1);
-                          return `${percent}%`;
-                        }}
-                        labelLine={true}
-                      >
-                        {dspChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value: number) => `€${value}`}
-                        contentStyle={{
-                          background: 'rgba(30, 47, 47, 0.95)',
-                          border: '1px solid rgba(201, 165, 116, 0.3)',
-                          borderRadius: '8px',
-                          color: '#fff'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {dspChartData.map((platform, index) => (
-                      <div key={index} style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '10px',
-                        padding: '8px 12px',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.05)'
-                      }}>
-                        <div style={{
-                          width: '12px',
-                          height: '12px',
-                          borderRadius: '3px',
-                          background: platform.color
-                        }} />
-                        <span style={{ 
-                          color: '#ffffff', 
-                          fontSize: '14px', 
-                          fontWeight: '500',
-                          flex: 1
-                        }}>
-                          {platform.name}
-                        </span>
-                        <span style={{ 
-                          color: '#c9a574', 
-                          fontSize: '14px', 
-                          fontWeight: '600'
-                        }}>
-                          €{platform.value.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Full Width: Recent Tracks from CSV */}
+          <div style={{ padding: '0' }}>
+            {/* Header Cards Grid */}
             <div style={{
-              marginTop: '24px',
-              background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.15) 0%, rgba(42, 63, 63, 0.4) 100%)',
-              border: '2px solid rgba(201, 165, 116, 0.3)',
-              borderRadius: '20px',
-              padding: '28px',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 8px 32px rgba(201, 165, 116, 0.1)'
+              display: 'grid',
+              gridTemplateColumns: '445px 1fr',
+              gap: '12px',
+              marginBottom: '24px',
+              padding: '0',
+              width: '100%'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #c9a574 0%, #b8956a 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 16px rgba(201, 165, 116, 0.3)'
+              {/* Main Welcome Card */}
+              <div style={{
+                background: 'rgba(42, 63, 63, 0.3)',
+                borderRadius: '16px',
+                padding: '28px 32px',
+                position: 'relative',
+                overflow: 'hidden',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: '600',
+                  color: '#ffffff',
+                  marginBottom: '8px',
+                  lineHeight: '1.3'
                 }}>
-                  <Music size={24} color="#fff" />
+                  Hola, aquí está el resumen
+                  <br />
+                  de tus royalties.
+                </h2>
+                
+                {/* Mini bar chart */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  gap: '4px',
+                  height: '60px',
+                  marginTop: '20px',
+                  marginBottom: '24px'
+                }}>
+                  {csvLineData.slice(-6).map((data, index) => (
+                    <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <div style={{
+                        width: '100%',
+                        backgroundColor: index === csvLineData.slice(-6).length - 1 ? '#c9a574' : 'rgba(201, 165, 116, 0.3)',
+                        height: `${Math.max(20, (data.revenue / Math.max(...csvLineData.map(d => d.revenue))) * 60)}px`,
+                        borderRadius: '4px 4px 0 0',
+                        transition: 'all 0.3s ease'
+                      }} />
+                      <span style={{
+                        fontSize: '10px',
+                        color: index === csvLineData.slice(-6).length - 1 ? '#c9a574' : 'rgba(255, 255, 255, 0.5)',
+                        fontWeight: index === csvLineData.slice(-6).length - 1 ? '600' : '400'
+                      }}>
+                        {data.mes.substring(0, 3)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
+
+                <div style={{ marginTop: '16px' }}>
+                  <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px' }}>
+                    Este mes tus artistas han generado
+                  </p>
+                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#c9a574' }}>
+                    €{dashboardData.totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Card with Multiple Metrics */}
+              <div style={{
+                background: 'rgba(42, 63, 63, 0.6)',
+                borderRadius: '20px',
+                padding: '32px',
+                border: '1px solid rgba(201, 165, 116, 0.15)',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '24px'
+              }}>
+                {/* Average Revenue per Artist */}
                 <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '2px' }}>
-                    Canciones Recientes del CSV
-                  </h2>
-                  <p style={{ fontSize: '13px', color: '#AFB3B7' }}>
-                    Top tracks procesados recientemente
+                  <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px' }}>
+                    Beneficios de Bam
+                  </p>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#c9a574', marginBottom: '4px' }}>
+                    €{artists.reduce((sum, artist) => {
+                      const contract = contracts.find(c => c.artistId === artist.id);
+                      const bamPercentage = contract ? (100 - contract.percentage) / 100 : 0.30;
+                      return sum + ((artist.totalRevenue || 0) * bamPercentage);
+                    }, 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#4ade80' }}>
+                    <ArrowUpRight size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                    Según porcentajes de contratos
+                  </p>
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: '1px', background: 'rgba(201, 165, 116, 0.15)' }} />
+
+                {/* Total Streams */}
+                <div>
+                  <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px' }}>
+                    Beneficio de Artistas
+                  </p>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#c9a574', marginBottom: '4px' }}>
+                    €{artists.reduce((sum, artist) => {
+                      const contract = contracts.find(c => c.artistId === artist.id);
+                      const artistPercentage = contract ? contract.percentage / 100 : 0.70;
+                      return sum + ((artist.totalRevenue || 0) * artistPercentage);
+                    }, 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#4ade80' }}>
+                    <ArrowUpRight size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                    Según porcentajes de contratos
                   </p>
                 </div>
               </div>
+            </div>
 
-              {/* Table Header */}
+            {/* Segunda fila con caja izquierda y 3 cajas verticales a la derecha */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              marginBottom: '16px',
+              width: '100%'
+            }}>
+              {/* Primera línea: Columna izquierda (Info + Nueva) + Columna central (Cajas 1, 2, 3) + Columna derecha (Caja 4) */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 1.5fr 1.2fr 1fr 1fr 1fr',
-                gap: '16px',
-                padding: '12px 16px',
-                background: 'rgba(201, 165, 116, 0.1)',
-                borderRadius: '12px',
-                marginBottom: '12px',
-                borderBottom: '2px solid rgba(201, 165, 116, 0.3)'
+                display: 'flex',
+                gap: '4px',
+                justifyContent: 'space-between',
+                width: '100%'
               }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Canción
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Artista
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  ISRC
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Streams
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Revenue
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Plataforma
-                </div>
-              </div>
-
-              {/* Table Rows */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {recentTracks.map((track, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '2fr 1.5fr 1.2fr 1fr 1fr 1fr',
-                      gap: '16px',
-                      padding: '16px',
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      borderRadius: '12px',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                      transition: 'all 0.3s ease',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(201, 165, 116, 0.08)';
-                      e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.3)';
-                      e.currentTarget.style.transform = 'translateX(4px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
-                      e.currentTarget.style.transform = 'translateX(0)';
-                    }}
-                  >
-                    {/* Title */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* Columna izquierda: Información Adicional y Nueva Sección */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  {/* Caja de Información Adicional */}
+                  <div style={{
+                    background: 'rgba(42, 63, 63, 0.3)',
+                    borderRadius: '16px',
+                    padding: '20px 32px',
+                    border: '1px solid rgba(201, 165, 116, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    width: '870px',
+                    height: '205px',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    <h3 style={{
+                      fontSize: '20px',
+                      fontWeight: '600',
+                      color: '#ffffff',
+                      marginBottom: '16px'
+                    }}>
+                      Artistas Pendientes de Solicitud
+                    </h3>
+                    {artists.length > 0 ? (
                       <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '8px',
-                        background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.3) 0%, rgba(201, 165, 116, 0.1) 100%)',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '14px',
-                        fontWeight: '700',
-                        color: '#c9a574'
+                        flexDirection: 'column',
+                        gap: '8px',
+                        overflowY: 'auto',
+                        maxHeight: '140px'
                       }}>
-                        {index + 1}
+                        {artists.filter(artist => artist.totalRevenue > 0).map((artist, index) => (
+                          <div key={artist.id} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 12px',
+                            background: 'rgba(201, 165, 116, 0.1)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(201, 165, 116, 0.15)'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                background: artist.photo ? `url(${artist.photo})` : '#c9a574',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                color: '#2a3f3f'
+                              }}>
+                                {!artist.photo && artist.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span style={{
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                color: '#ffffff'
+                              }}>
+                                {artist.name}
+                              </span>
+                            </div>
+                            <span style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#c9a574'
+                            }}>
+                              €{artist.totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
-                        {track.title}
-                      </span>
-                    </div>
-
-                    {/* Artist */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span style={{ fontSize: '14px', color: '#AFB3B7' }}>
-                        {track.artist}
-                      </span>
-                    </div>
-
-                    {/* ISRC */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <code style={{
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        color: '#60a5fa',
-                        background: 'rgba(96, 165, 250, 0.1)',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(96, 165, 250, 0.2)'
+                    ) : (
+                      <p style={{
+                        fontSize: '14px',
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        textAlign: 'center',
+                        marginTop: '32px'
                       }}>
-                        {track.isrc}
-                      </code>
-                    </div>
+                        No hay artistas con royalties pendientes
+                      </p>
+                    )}
+                  </div>
 
-                    {/* Streams */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#4ade80' }}>
-                        {track.streams.toLocaleString()}
-                      </span>
-                    </div>
-
-                    {/* Revenue */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#c9a574' }}>
-                        €{track.revenue.toFixed(2)}
-                      </span>
-                    </div>
-
-                    {/* Platform */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 10px',
-                        background: `${track.platformColor}15`,
-                        borderRadius: '8px',
-                        border: `1px solid ${track.platformColor}40`
-                      }}>
+                  {/* Nueva Sección - Ventas del Último Año */}
+                  <div style={{
+                    background: 'rgba(42, 63, 63, 0.3)',
+                    borderRadius: '16px',
+                    padding: '20px 32px',
+                    border: '1px solid rgba(201, 165, 116, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    width: '870px',
+                    height: '418px',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    <h3 style={{
+                      fontSize: '20px',
+                      fontWeight: '600',
+                      color: '#ffffff',
+                      marginBottom: '8px'
+                    }}>
+                      Ventas del Último Año
+                    </h3>
+                    <div style={{
+                      display: 'flex',
+                      gap: '24px',
+                      marginBottom: '16px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: track.platformColor
+                          width: '12px',
+                          height: '3px',
+                          background: '#c9a574',
+                          borderRadius: '2px'
                         }} />
-                        <span style={{ fontSize: '12px', fontWeight: '500', color: '#ffffff' }}>
-                          {track.platform}
+                        <span style={{
+                          fontSize: '13px',
+                          color: 'rgba(255, 255, 255, 0.8)'
+                        }}>
+                          Año actual
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '12px',
+                          height: '3px',
+                          background: 'rgba(255, 255, 255, 0.4)',
+                          borderRadius: '2px',
+                          backgroundImage: 'repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.4) 0px, rgba(255, 255, 255, 0.4) 4px, transparent 4px, transparent 8px)'
+                        }} />
+                        <span style={{
+                          fontSize: '13px',
+                          color: 'rgba(255, 255, 255, 0.6)'
+                        }}>
+                          Año anterior
                         </span>
                       </div>
                     </div>
+                    <div style={{ flexGrow: 1, width: '100%' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={[
+                            { month: 'Ene', actual: 45000, anterior: 38000 },
+                            { month: 'Feb', actual: 52000, anterior: 42000 },
+                            { month: 'Mar', actual: 48000, anterior: 45000 },
+                            { month: 'Abr', actual: 61000, anterior: 49000 },
+                            { month: 'May', actual: 55000, anterior: 51000 },
+                            { month: 'Jun', actual: 67000, anterior: 54000 },
+                            { month: 'Jul', actual: 72000, anterior: 58000 },
+                            { month: 'Ago', actual: 68000, anterior: 62000 },
+                            { month: 'Sep', actual: 74000, anterior: 65000 },
+                            { month: 'Oct', actual: 79000, anterior: 68000 },
+                            { month: 'Nov', actual: 83000, anterior: 71000 },
+                            { month: 'Dic', actual: 91000, anterior: 76000 }
+                          ]}
+                          margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                        >
+                          <XAxis 
+                            dataKey="month" 
+                            stroke="rgba(255, 255, 255, 0.6)"
+                            style={{ fontSize: '12px' }}
+                          />
+                          <YAxis 
+                            stroke="rgba(255, 255, 255, 0.6)"
+                            style={{ fontSize: '12px' }}
+                            tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              background: 'rgba(42, 63, 63, 0.95)',
+                              border: '1px solid rgba(201, 165, 116, 0.3)',
+                              borderRadius: '8px',
+                              color: '#ffffff'
+                            }}
+                            formatter={(value: any) => [`€${value.toLocaleString()}`, '']}
+                            labelStyle={{ color: '#c9a574' }}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="actual" 
+                            stroke="#c9a574" 
+                            strokeWidth={2.5}
+                            dot={{ fill: '#c9a574', r: 4 }}
+                            activeDot={{ r: 6 }}
+                            name="Año actual"
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="anterior" 
+                            stroke="rgba(255, 255, 255, 0.4)" 
+                            strokeWidth={2}
+                            strokeDasharray="5 5"
+                            dot={{ fill: 'rgba(255, 255, 255, 0.4)', r: 3 }}
+                            activeDot={{ r: 5 }}
+                            name="Año anterior"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Columna central: Caja 1, Caja 2 y Caja 3 */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  {/* Caja 1 - Solicitudes de Royalties */}
+                  <div style={{
+                    background: 'rgba(42, 63, 63, 0.3)',
+                    borderRadius: '16px',
+                    padding: '16px 20px',
+                    border: '1px solid rgba(201, 165, 116, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    width: '490px',
+                    height: '205px',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    <h4 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#ffffff',
+                      marginBottom: '10px'
+                    }}>
+                      Solicitudes de Royalties
+                    </h4>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      overflowY: 'auto',
+                      flex: 1
+                    }}>
+                      {artists.length > 0 ? (
+                        artists.slice(0, 3).map((artist, index) => (
+                          <div key={artist.id} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 12px',
+                            background: 'rgba(201, 165, 116, 0.1)',
+                            borderRadius: '10px',
+                            border: '1px solid rgba(201, 165, 116, 0.2)'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                              <div style={{
+                                width: '34px',
+                                height: '34px',
+                                borderRadius: '50%',
+                                background: artist.photo ? `url(${artist.photo})` : '#c9a574',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                color: '#2a3f3f',
+                                flexShrink: 0
+                              }}>
+                                {!artist.photo && artist.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: '14px',
+                                  fontWeight: '600',
+                                  color: '#ffffff',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis'
+                                }}>
+                                  {artist.name}
+                                </div>
+                                <div style={{
+                                  fontSize: '11px',
+                                  color: 'rgba(255, 255, 255, 0.5)',
+                                  marginTop: '2px'
+                                }}>
+                                  Hace {index + 1}h
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{
+                              fontSize: '13px',
+                              fontWeight: '700',
+                              color: '#c9a574',
+                              whiteSpace: 'nowrap',
+                              marginLeft: '12px'
+                            }}>
+                              €{artist.totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: '100%',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          fontSize: '13px',
+                          textAlign: 'center'
+                        }}>
+                          No hay solicitudes
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Caja 2 - Transferencias */}
+                  <div style={{
+                    background: 'rgba(42, 63, 63, 0.3)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '1px solid rgba(201, 165, 116, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    width: '490px',
+                    height: '205px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px'
+                    }}>
+                      {/* Icono */}
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '12px',
+                        background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.2), rgba(201, 165, 116, 0.1))',
+                        border: '1px solid rgba(201, 165, 116, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <ArrowUpRight style={{
+                          width: '26px',
+                          height: '26px',
+                          color: '#c9a574'
+                        }} />
+                      </div>
+
+                      {/* Contenido */}
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        flex: 1
+                      }}>
+                        <h4 style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase'
+                        }}>
+                          Transferencias Realizadas
+                        </h4>
+                        <div style={{
+                          fontSize: '32px',
+                          fontWeight: '700',
+                          color: '#ffffff',
+                          lineHeight: '1',
+                          marginTop: '2px'
+                        }}>
+                          {artists.filter(a => a.totalRevenue > 0).length}
+                        </div>
+                        <p style={{
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          marginTop: '2px'
+                        }}>
+                          Artistas con pagos procesados
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Caja 3 - Royalties Pendientes */}
+                  <div style={{
+                    background: 'rgba(42, 63, 63, 0.3)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '1px solid rgba(201, 165, 116, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    width: '490px',
+                    height: '205px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px'
+                    }}>
+                      {/* Icono */}
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '12px',
+                        background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.1))',
+                        border: '1px solid rgba(251, 191, 36, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Clock style={{
+                          width: '26px',
+                          height: '26px',
+                          color: '#fbbf24'
+                        }} />
+                      </div>
+
+                      {/* Contenido */}
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        flex: 1
+                      }}>
+                        <h4 style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase'
+                        }}>
+                          Royalties Pendientes
+                        </h4>
+                        <div style={{
+                          fontSize: '32px',
+                          fontWeight: '700',
+                          color: '#ffffff',
+                          lineHeight: '1',
+                          marginTop: '2px'
+                        }}>
+                          €{dashboardData.totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </div>
+                        <p style={{
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          marginTop: '2px'
+                        }}>
+                          De plataformas de streaming
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Columna derecha: Caja 4 - Gross Profit */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  {/* Caja 4 - Gross Profit (Tarjeta Vertical) */}
+                  <div style={{
+                    background: 'rgba(42, 63, 63, 0.4)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '2px solid rgba(42, 63, 63, 0.6)',
+                    width: '290px',
+                    height: '414px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: '0 8px 32px rgba(42, 63, 63, 0.3)'
+                  }}>
+                    {/* Decoración de fondo */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '-30px',
+                      right: '-30px',
+                      width: '100px',
+                      height: '100px',
+                      borderRadius: '50%',
+                      background: 'rgba(0, 0, 0, 0.05)',
+                      pointerEvents: 'none'
+                    }} />
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px',
+                      position: 'relative',
+                      zIndex: 1
+                    }}>
+                      {/* Icono */}
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        background: 'rgba(0, 0, 0, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <TrendingUp style={{
+                          width: '24px',
+                          height: '24px',
+                          color: '#5a8a8a'
+                        }} />
+                      </div>
+
+                      {/* Contenido */}
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        flex: 1
+                      }}>
+                        <h4 style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase'
+                        }}>
+                          Gross Profit
+                        </h4>
+                        <div style={{
+                          fontSize: '32px',
+                          fontWeight: '700',
+                          color: '#c9a574',
+                          lineHeight: '1',
+                          marginTop: '2px'
+                        }}>
+                          €{artists.reduce((sum, artist) => {
+                            const contract = contracts.find(c => c.artistId === artist.id);
+                            const bamPercentage = contract ? (100 - contract.percentage) / 100 : 0.30;
+                            return sum + ((artist.totalRevenue || 0) * bamPercentage);
+                          }, 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <p style={{
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.6)',
+                          marginTop: '2px'
+                        }}>
+                          Ingresos BAM según contratos
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Caja 5 - Net Profit */}
+                  <div style={{
+                    background: 'rgba(42, 63, 63, 0.4)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '2px solid rgba(42, 63, 63, 0.6)',
+                    width: '290px',
+                    height: '205px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: '0 8px 32px rgba(42, 63, 63, 0.3)'
+                  }}>
+                    {/* Decoración de fondo */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '-30px',
+                      right: '-30px',
+                      width: '100px',
+                      height: '100px',
+                      borderRadius: '50%',
+                      background: 'rgba(0, 0, 0, 0.05)',
+                      pointerEvents: 'none'
+                    }} />
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px',
+                      position: 'relative',
+                      zIndex: 1
+                    }}>
+                      {/* Icono */}
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        background: 'rgba(0, 0, 0, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <DollarSign style={{
+                          width: '24px',
+                          height: '24px',
+                          color: '#5a8a8a'
+                        }} />
+                      </div>
+
+                      {/* Contenido */}
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        flex: 1
+                      }}>
+                        <h4 style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase'
+                        }}>
+                          Net Profit
+                        </h4>
+                        <div style={{
+                          fontSize: '32px',
+                          fontWeight: '700',
+                          color: '#c9a574',
+                          lineHeight: '1',
+                          marginTop: '2px'
+                        }}>
+                          €{(artists.reduce((sum, artist) => {
+                            const contract = contracts.find(c => c.artistId === artist.id);
+                            const bamPercentage = contract ? (100 - contract.percentage) / 100 : 0.30;
+                            return sum + ((artist.totalRevenue || 0) * bamPercentage);
+                          }, 0) * 0.85).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <p style={{
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.6)',
+                          marginTop: '2px'
+                        }}>
+                          Después de gastos operativos (15%)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+
+
           </div>
         );
       
       case 'Subir CSV':
         return <CSVUploader />;
+      
+      case 'Finanzas':
+        return <FinancesPanel dashboardData={dashboardData} artists={artists} />;
       
       case 'Artistas':
         return (
@@ -590,7 +1153,7 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                {artists.map((artist) => (
+                {localArtists.map((artist) => (
                   <div
                     key={artist.id}
                     style={{
@@ -613,7 +1176,7 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
                     }}
                     onClick={() => setSelectedArtist(artist)}
                   >
-                    {/* Artist Photo */}
+                    {/* Artist Photo with Camera Button */}
                     <div style={{
                       width: '100%',
                       height: '200px',
@@ -624,9 +1187,54 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
                         : 'linear-gradient(135deg, rgba(201, 165, 116, 0.2) 0%, rgba(42, 63, 63, 0.3) 100%)',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      cursor: 'pointer'
                     }}>
                       {!artist.photo && <Users size={48} color="#c9a574" />}
+                      
+                      {/* Botón de cambiar foto */}
+                      <label
+                        htmlFor={`photo-upload-${artist.id}`}
+                        style={{
+                          position: 'absolute',
+                          top: '12px',
+                          right: '12px',
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          background: 'rgba(201, 165, 116, 0.95)',
+                          backdropFilter: 'blur(10px)',
+                          border: '2px solid rgba(255, 255, 255, 0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                          zIndex: 10
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.1)';
+                          e.currentTarget.style.background = 'rgba(201, 165, 116, 1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.background = 'rgba(201, 165, 116, 0.95)';
+                        }}
+                      >
+                        <Camera size={20} color="#ffffff" />
+                      </label>
+                      <input
+                        id={`photo-upload-${artist.id}`}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handlePhotoChange(artist.id, e)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     </div>
 
                     {/* Artist Name */}
@@ -659,46 +1267,70 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
       case 'Catálogo':
         return (
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '24px', color: '#ffffff' }}>
-              Catálogo Musical
-            </h1>
-            
-            {/* Stats Summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
-                border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '16px',
-                padding: '20px'
-              }}>
-                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Total Canciones</div>
-                <div style={{ fontSize: '32px', fontWeight: '700', color: '#c9a574' }}>{tracks.length}</div>
+            {/* Header with View Toggle */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#ffffff', marginBottom: '4px' }}>
+                  Catálogo Musical
+                </h1>
+                <p style={{ fontSize: '14px', color: '#AFB3B7' }}>
+                  {tracks.length} canciones en total
+                </p>
               </div>
+              
+              {/* View Mode Toggle */}
               <div style={{
-                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
-                border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '16px',
-                padding: '20px'
+                display: 'flex',
+                gap: '8px',
+                background: 'rgba(42, 63, 63, 0.4)',
+                padding: '4px',
+                borderRadius: '12px',
+                border: '1px solid rgba(201, 165, 116, 0.2)'
               }}>
-                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Revenue Total</div>
-                <div style={{ fontSize: '32px', fontWeight: '700', color: '#4ade80' }}>
-                  {formatEuro(tracks.reduce((sum, t) => sum + t.totalRevenue, 0))}
-                </div>
-              </div>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
-                border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '16px',
-                padding: '20px'
-              }}>
-                <div style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '8px' }}>Streams Totales</div>
-                <div style={{ fontSize: '32px', fontWeight: '700', color: '#60a5fa' }}>
-                  {tracks.reduce((sum, t) => sum + t.totalStreams, 0).toLocaleString()}
-                </div>
+                <button
+                  onClick={() => setCatalogViewMode('grid')}
+                  style={{
+                    padding: '8px 16px',
+                    background: catalogViewMode === 'grid' ? 'rgba(201, 165, 116, 0.3)' : 'transparent',
+                    border: catalogViewMode === 'grid' ? '1px solid rgba(201, 165, 116, 0.5)' : '1px solid transparent',
+                    borderRadius: '8px',
+                    color: catalogViewMode === 'grid' ? '#c9a574' : '#AFB3B7',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <Grid3x3 size={16} />
+                  Grid
+                </button>
+                <button
+                  onClick={() => setCatalogViewMode('list')}
+                  style={{
+                    padding: '8px 16px',
+                    background: catalogViewMode === 'list' ? 'rgba(201, 165, 116, 0.3)' : 'transparent',
+                    border: catalogViewMode === 'list' ? '1px solid rgba(201, 165, 116, 0.5)' : '1px solid transparent',
+                    borderRadius: '8px',
+                    color: catalogViewMode === 'list' ? '#c9a574' : '#AFB3B7',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <List size={16} />
+                  List
+                </button>
               </div>
             </div>
 
-            {/* Tracks Table */}
+            {/* Empty State */}
             {tracks.length === 0 ? (
               <div style={{
                 background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
@@ -711,130 +1343,320 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
                 <p style={{ fontSize: '18px', color: '#AFB3B7', marginBottom: '8px' }}>No hay canciones aún</p>
                 <p style={{ fontSize: '14px', color: '#6b7280' }}>Sube un archivo CSV para crear el catálogo automáticamente</p>
               </div>
+            ) : catalogViewMode === 'grid' ? (
+              /* GRID VIEW */
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '20px'
+              }}>
+                {tracks.map((track) => (
+                  <div
+                    key={track.id}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                      border: '1px solid rgba(201, 165, 116, 0.2)',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.4)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.2)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    {/* Album Cover Placeholder */}
+                    <div 
+                      className="track-cover"
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.2) 0%, rgba(201, 165, 116, 0.05) 100%)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '16px',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <Disc size={48} color="#c9a574" style={{ opacity: 0.4 }} />
+                      
+                      {/* Play/Upload Overlay */}
+                      <div 
+                        className="track-overlay"
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'rgba(0, 0, 0, 0.6)',
+                          backdropFilter: 'blur(4px)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '12px',
+                          opacity: 0,
+                          transition: 'opacity 0.3s ease'
+                        }}
+                      >
+                        {/* Play/Pause Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayPause(track.id, (track as any).audioUrl);
+                          }}
+                          style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '50%',
+                            background: playingTrackId === track.id ? 'rgba(239, 68, 68, 0.9)' : 'rgba(201, 165, 116, 0.9)',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          {playingTrackId === track.id ? (
+                            <Pause size={20} color="#fff" />
+                          ) : (
+                            <Play size={20} color="#fff" style={{ marginLeft: '2px' }} />
+                          )}
+                        </button>
+
+                        {/* Upload Audio Button */}
+                        <label style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: '50%',
+                          background: 'rgba(96, 165, 250, 0.9)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}>
+                          <UploadCloud size={20} color="#fff" />
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            onChange={(e) => handleAudioUpload(track.id, e)}
+                            style={{ display: 'none' }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Track Info */}
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color: '#ffffff',
+                      marginBottom: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {track.title}
+                    </h3>
+
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#AFB3B7',
+                      marginBottom: '12px'
+                    }}>
+                      {track.artistName}
+                    </p>
+
+                    {/* ISRC */}
+                    {track.isrc && (
+                      <code style={{
+                        fontSize: '11px',
+                        fontFamily: 'monospace',
+                        color: '#60a5fa',
+                        background: 'rgba(96, 165, 250, 0.1)',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(96, 165, 250, 0.2)',
+                        display: 'inline-block',
+                        marginBottom: '12px'
+                      }}>
+                        {track.isrc}
+                      </code>
+                    )}
+
+                    {/* Stats */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingTop: '12px',
+                      borderTop: '1px solid rgba(201, 165, 116, 0.1)'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Streams</div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#4ade80' }}>
+                          {track.totalStreams.toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Revenue</div>
+                        <div style={{ fontSize: '14px', fontWeight: '700', color: '#c9a574' }}>
+                          {formatEuro(track.totalRevenue)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Platforms */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '4px',
+                      flexWrap: 'wrap',
+                      marginTop: '12px'
+                    }}>
+                      {track.platforms.slice(0, 2).map((platform, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            padding: '4px 8px',
+                            background: 'rgba(201, 165, 116, 0.1)',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(201, 165, 116, 0.2)',
+                            fontSize: '10px',
+                            color: '#c9a574',
+                            fontWeight: '500'
+                          }}
+                        >
+                          {platform}
+                        </div>
+                      ))}
+                      {track.platforms.length > 2 && (
+                        <div style={{
+                          padding: '4px 8px',
+                          background: 'rgba(96, 165, 250, 0.1)',
+                          borderRadius: '6px',
+                          fontSize: '10px',
+                          color: '#60a5fa',
+                          fontWeight: '500'
+                        }}>
+                          +{track.platforms.length - 2}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
+              /* LIST VIEW */
               <div style={{
                 background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
                 border: '1px solid rgba(201, 165, 116, 0.2)',
                 borderRadius: '16px',
-                padding: '24px',
-                overflowX: 'auto'
+                padding: '24px'
               }}>
-                {/* Table Header */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '2fr 1.5fr 1.2fr 1fr 1fr 1.5fr',
-                  gap: '16px',
-                  padding: '12px 16px',
-                  background: 'rgba(201, 165, 116, 0.1)',
-                  borderRadius: '12px',
-                  marginBottom: '12px',
-                  borderBottom: '2px solid rgba(201, 165, 116, 0.3)'
-                }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Canción</div>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Artista</div>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>ISRC</div>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Streams</div>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Revenue</div>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase' }}>Plataformas</div>
-                </div>
-
-                {/* Table Rows */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {tracks.map((track, index) => (
                     <div
                       key={track.id}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '2fr 1.5fr 1.2fr 1fr 1fr 1.5fr',
+                        gridTemplateColumns: '50px 2fr 1.5fr 1fr 1fr 1fr 120px',
                         gap: '16px',
                         padding: '16px',
                         background: 'rgba(255, 255, 255, 0.02)',
                         borderRadius: '12px',
                         border: '1px solid rgba(255, 255, 255, 0.05)',
                         transition: 'all 0.3s ease',
-                        cursor: 'pointer'
+                        alignItems: 'center'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(201, 165, 116, 0.08)';
                         e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.3)';
-                        e.currentTarget.style.transform = 'translateX(4px)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
                         e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
-                        e.currentTarget.style.transform = 'translateX(0)';
                       }}
                     >
-                      {/* Title */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
+                      {/* Play Button */}
+                      <button
+                        onClick={() => handlePlayPause(track.id, (track as any).audioUrl)}
+                        style={{
                           width: '40px',
                           height: '40px',
                           borderRadius: '8px',
-                          background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.3) 0%, rgba(201, 165, 116, 0.1) 100%)',
+                          background: playingTrackId === track.id 
+                            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%)'
+                            : 'linear-gradient(135deg, rgba(201, 165, 116, 0.3) 0%, rgba(201, 165, 116, 0.1) 100%)',
+                          border: playingTrackId === track.id
+                            ? '1px solid rgba(239, 68, 68, 0.5)'
+                            : '1px solid rgba(201, 165, 116, 0.3)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          flexShrink: 0
-                        }}>
-                          <Disc size={20} color="#c9a574" />
-                        </div>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        {playingTrackId === track.id ? (
+                          <Pause size={18} color="#ef4444" />
+                        ) : (
+                          <Play size={18} color="#c9a574" style={{ marginLeft: '2px' }} />
+                        )}
+                      </button>
+
+                      {/* Title */}
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff', marginBottom: '2px' }}>
                           {track.title}
-                        </span>
-                      </div>
-
-                      {/* Artist */}
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{ fontSize: '14px', color: '#AFB3B7' }}>
-                          {track.artistName}
-                        </span>
-                      </div>
-
-                      {/* ISRC */}
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        {track.isrc ? (
+                        </div>
+                        {track.isrc && (
                           <code style={{
-                            fontSize: '12px',
+                            fontSize: '11px',
                             fontFamily: 'monospace',
                             color: '#60a5fa',
-                            background: 'rgba(96, 165, 250, 0.1)',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            border: '1px solid rgba(96, 165, 250, 0.2)'
+                            opacity: 0.7
                           }}>
                             {track.isrc}
                           </code>
-                        ) : (
-                          <span style={{ fontSize: '12px', color: '#6b7280' }}>N/A</span>
                         )}
                       </div>
 
+                      {/* Artist */}
+                      <div style={{ fontSize: '14px', color: '#AFB3B7' }}>
+                        {track.artistName}
+                      </div>
+
                       {/* Streams */}
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#4ade80' }}>
-                          {track.totalStreams.toLocaleString()}
-                        </span>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#4ade80' }}>
+                        {track.totalStreams.toLocaleString()}
                       </div>
 
                       {/* Revenue */}
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#c9a574' }}>
-                          {formatEuro(track.totalRevenue)}
-                        </span>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#c9a574' }}>
+                        {formatEuro(track.totalRevenue)}
                       </div>
 
                       {/* Platforms */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                        {track.platforms.slice(0, 3).map((platform, i) => (
+                        {track.platforms.slice(0, 2).map((platform, i) => (
                           <div
                             key={i}
                             style={{
-                              padding: '4px 8px',
+                              padding: '4px 6px',
                               background: 'rgba(201, 165, 116, 0.1)',
-                              borderRadius: '6px',
-                              border: '1px solid rgba(201, 165, 116, 0.2)',
-                              fontSize: '11px',
+                              borderRadius: '4px',
+                              fontSize: '10px',
                               color: '#c9a574',
                               fontWeight: '500'
                             }}
@@ -842,26 +1664,538 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
                             {platform}
                           </div>
                         ))}
-                        {track.platforms.length > 3 && (
+                        {track.platforms.length > 2 && (
                           <div style={{
-                            padding: '4px 8px',
+                            padding: '4px 6px',
                             background: 'rgba(96, 165, 250, 0.1)',
-                            borderRadius: '6px',
-                            fontSize: '11px',
+                            borderRadius: '4px',
+                            fontSize: '10px',
                             color: '#60a5fa',
                             fontWeight: '500'
                           }}>
-                            +{track.platforms.length - 3}
+                            +{track.platforms.length - 2}
                           </div>
                         )}
                       </div>
+
+                      {/* Upload Audio */}
+                      <label style={{
+                        padding: '8px 12px',
+                        background: 'rgba(96, 165, 250, 0.1)',
+                        border: '1px solid rgba(96, 165, 250, 0.3)',
+                        borderRadius: '8px',
+                        color: '#60a5fa',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.3s ease',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(96, 165, 250, 0.2)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(96, 165, 250, 0.1)';
+                      }}
+                      >
+                        <UploadCloud size={14} />
+                        Audio
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          onChange={(e) => handleAudioUpload(track.id, e)}
+                          style={{ display: 'none' }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </label>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* CSS for Grid Hover Effect */}
+            <style>{`
+              .track-cover:hover .track-overlay {
+                opacity: 1 !important;
+              }
+            `}</style>
           </div>
         );
+
+      case 'Contratos':
+        return (
+          <div>
+            {/* Header with Add Button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#ffffff', marginBottom: '4px' }}>
+                  Gestión de Contratos
+                </h1>
+                <p style={{ fontSize: '14px', color: '#AFB3B7' }}>
+                  {contracts.length} contratos registrados
+                </p>
+              </div>
+              
+              <button
+                onClick={() => {
+                  setEditingContract(null);
+                  setShowContractModal(true);
+                }}
+                style={{
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #c9a574 0%, #b8956a 100%)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: '#ffffff',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(201, 165, 116, 0.3)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(201, 165, 116, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 165, 116, 0.3)';
+                }}
+              >
+                <Plus size={18} />
+                Nuevo Contrato
+              </button>
+            </div>
+
+            {/* Empty State */}
+            {contracts.length === 0 ? (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                border: '1px solid rgba(201, 165, 116, 0.2)',
+                borderRadius: '16px',
+                padding: '48px',
+                textAlign: 'center'
+              }}>
+                <FileSignature size={48} color="#c9a574" style={{ margin: '0 auto 16px' }} />
+                <p style={{ fontSize: '18px', color: '#AFB3B7', marginBottom: '8px' }}>No hay contratos registrados</p>
+                <p style={{ fontSize: '14px', color: '#6b7280' }}>Crea un nuevo contrato para empezar</p>
+              </div>
+            ) : (
+              /* Contracts List */
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}>
+                {contracts.map((contract) => {
+                  const statusConfig = {
+                    active: { label: 'Activo', color: '#4ade80', bgColor: 'rgba(74, 222, 128, 0.1)' },
+                    pending: { label: 'Pendiente', color: '#fbbf24', bgColor: 'rgba(251, 191, 36, 0.1)' },
+                    expired: { label: 'Vencido', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)' }
+                  }[contract.status];
+
+                  return (
+                    <div
+                      key={contract.id}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
+                        border: '1px solid rgba(201, 165, 116, 0.2)',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '24px',
+                        flexWrap: 'wrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.4)';
+                        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(201, 165, 116, 0.2)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      {/* Artist Info */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '250px' }}>
+                        {contract.artistPhoto ? (
+                          <img
+                            src={contract.artistPhoto}
+                            alt={contract.artistName}
+                            style={{
+                              width: '64px',
+                              height: '64px',
+                              borderRadius: '12px',
+                              objectFit: 'cover',
+                              border: '2px solid rgba(201, 165, 116, 0.3)'
+                            }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.3) 0%, rgba(201, 165, 116, 0.1) 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '2px solid rgba(201, 165, 116, 0.3)'
+                          }}>
+                            <Users size={28} color="#c9a574" />
+                          </div>
+                        )}
+                        <div>
+                          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#ffffff', marginBottom: '4px' }}>
+                            {contract.artistName}
+                          </h3>
+                          <p style={{ fontSize: '13px', color: '#AFB3B7', marginBottom: '6px' }}>
+                            {contract.type} • {contract.territory}
+                          </p>
+                          {/* Status Badge */}
+                          <div style={{
+                            display: 'inline-flex',
+                            padding: '4px 10px',
+                            background: statusConfig.bgColor,
+                            borderRadius: '6px',
+                            border: `1px solid ${statusConfig.color}40`,
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <div style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              background: statusConfig.color
+                            }} />
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: statusConfig.color }}>
+                              {statusConfig.label}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contract Stats */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '24px',
+                        flex: 1,
+                        flexWrap: 'wrap',
+                        minWidth: '300px'
+                      }}>
+                        {/* Percentage */}
+                        <div style={{ flex: '1 1 120px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                            <Percent size={14} color="#c9a574" />
+                            <span style={{ fontSize: '12px', color: '#6b7280' }}>Royalties</span>
+                          </div>
+                          <div style={{ fontSize: '24px', fontWeight: '700', color: '#c9a574' }}>
+                            {contract.percentage}%
+                          </div>
+                        </div>
+
+                        {/* Advance */}
+                        <div style={{ flex: '1 1 120px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                            <DollarSign size={14} color="#4ade80" />
+                            <span style={{ fontSize: '12px', color: '#6b7280' }}>Anticipo</span>
+                          </div>
+                          <div style={{ fontSize: '24px', fontWeight: '700', color: '#4ade80' }}>
+                            {formatEuro(contract.advancePayment)}
+                          </div>
+                        </div>
+
+                        {/* Dates */}
+                        <div style={{ flex: '1 1 200px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                            <Calendar size={14} color="#60a5fa" />
+                            <span style={{ fontSize: '12px', color: '#6b7280' }}>Vigencia</span>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#60a5fa', fontWeight: '600' }}>
+                            {new Date(contract.startDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#60a5fa', fontWeight: '600' }}>
+                            {new Date(contract.endDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                        <button
+                          onClick={() => setSelectedContractView(contract)}
+                          style={{
+                            padding: '10px 16px',
+                            background: 'rgba(96, 165, 250, 0.1)',
+                            border: '1px solid rgba(96, 165, 250, 0.3)',
+                            borderRadius: '10px',
+                            color: '#60a5fa',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.3s ease',
+                            whiteSpace: 'nowrap'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(96, 165, 250, 0.2)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(96, 165, 250, 0.1)';
+                          }}
+                        >
+                          <Eye size={14} />
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingContract(contract);
+                            setShowContractModal(true);
+                          }}
+                          style={{
+                            padding: '10px 16px',
+                            background: 'rgba(201, 165, 116, 0.1)',
+                            border: '1px solid rgba(201, 165, 116, 0.3)',
+                            borderRadius: '10px',
+                            color: '#c9a574',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.3s ease',
+                            whiteSpace: 'nowrap'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(201, 165, 116, 0.2)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(201, 165, 116, 0.1)';
+                          }}
+                        >
+                          <Edit2 size={14} />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`¿Eliminar el contrato de ${contract.artistName}?`)) {
+                              setContracts(prev => prev.filter(c => c.id !== contract.id));
+                              setNotifications(prev => [{
+                                id: Date.now(),
+                                type: 'success',
+                                title: 'Contrato Eliminado',
+                                message: `El contrato de ${contract.artistName} ha sido eliminado`,
+                                time: 'Ahora',
+                                read: false
+                              }, ...prev]);
+                            }
+                          }}
+                          style={{
+                            padding: '10px',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            borderRadius: '10px',
+                            color: '#ef4444',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Modal para Ver Contrato */}
+            {selectedContractView && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  backdropFilter: 'blur(4px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  padding: '20px'
+                }}
+                onClick={() => setSelectedContractView(null)}
+              >
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #2a3f3f 0%, #1e2f2f 100%)',
+                    border: '1px solid rgba(201, 165, 116, 0.3)',
+                    borderRadius: '20px',
+                    padding: '32px',
+                    maxWidth: '600px',
+                    width: '100%',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                    position: 'relative'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => setSelectedContractView(null)}
+                    style={{
+                      position: 'absolute',
+                      top: '16px',
+                      right: '16px',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <X size={16} color="#ef4444" />
+                  </button>
+
+                  <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#c9a574', marginBottom: '24px' }}>
+                    Detalles del Contrato
+                  </h2>
+
+                  {/* Artist */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', padding: '16px', background: 'rgba(201, 165, 116, 0.1)', borderRadius: '12px' }}>
+                    {selectedContractView.artistPhoto && (
+                      <img
+                        src={selectedContractView.artistPhoto}
+                        alt={selectedContractView.artistName}
+                        style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover' }}
+                      />
+                    )}
+                    <div>
+                      <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '4px' }}>
+                        {selectedContractView.artistName}
+                      </h3>
+                      <p style={{ fontSize: '14px', color: '#AFB3B7' }}>
+                        {selectedContractView.type} • {selectedContractView.territory}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Info Grid */}
+                  <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ padding: '16px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>Porcentaje de Royalties</div>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#c9a574' }}>
+                        {selectedContractView.percentage}%
+                      </div>
+                    </div>
+                    <div style={{ padding: '16px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>Anticipo Pagado</div>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#4ade80' }}>
+                        {formatEuro(selectedContractView.advancePayment)}
+                      </div>
+                    </div>
+                    <div style={{ padding: '16px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>Vigencia del Contrato</div>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#60a5fa' }}>
+                        {new Date(selectedContractView.startDate).toLocaleDateString('es-ES')} - {new Date(selectedContractView.endDate).toLocaleDateString('es-ES')}
+                      </div>
+                    </div>
+                    <div style={{ padding: '16px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>Términos del Contrato</div>
+                      <div style={{ fontSize: '14px', color: '#AFB3B7', lineHeight: '1.6' }}>
+                        {selectedContractView.terms}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal para Crear/Editar Contrato - TODO: Implementar */}
+            {showContractModal && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  backdropFilter: 'blur(4px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  padding: '20px'
+                }}
+                onClick={() => setShowContractModal(false)}
+              >
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #2a3f3f 0%, #1e2f2f 100%)',
+                    border: '1px solid rgba(201, 165, 116, 0.3)',
+                    borderRadius: '20px',
+                    padding: '32px',
+                    maxWidth: '600px',
+                    width: '100%',
+                    textAlign: 'center'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FileSignature size={48} color="#c9a574" style={{ margin: '0 auto 16px' }} />
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '12px' }}>
+                    Formulario de Contrato
+                  </h2>
+                  <p style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '24px' }}>
+                    Esta funcionalidad se implementará próximamente
+                  </p>
+                  <button
+                    onClick={() => setShowContractModal(false)}
+                    style={{
+                      padding: '12px 24px',
+                      background: 'linear-gradient(135deg, #c9a574 0%, #b8956a 100%)',
+                      border: 'none',
+                      borderRadius: '10px',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'Configuración':
+        return <ConfigurationPanel onSaveNotification={(notification) => {
+          setNotifications(prev => [notification, ...prev]);
+        }} />;
       
       default:
         return (
@@ -911,10 +2245,41 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
     };
     
     return (
-      <ArtistPortal 
-        onLogout={() => setSelectedArtist(null)}
-        artistData={artistData}
-      />
+      <div style={{ position: 'relative' }}>
+        {/* Flecha blanca minimalista para volver al panel de artistas */}
+        <button
+          onClick={() => setSelectedArtist(null)}
+          style={{
+            position: 'fixed',
+            top: '100px',
+            left: '32px',
+            zIndex: 1000,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            padding: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateX(-4px)';
+            e.currentTarget.style.opacity = '0.7';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateX(0)';
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <ArrowLeft size={32} color="#ffffff" strokeWidth={2.5} />
+        </button>
+        
+        <ArtistPortal 
+          onLogout={() => setSelectedArtist(null)}
+          artistData={artistData}
+        />
+      </div>
     );
   }
 
@@ -1248,10 +2613,9 @@ export default function DashboardSimple({ onLogout }: DashboardProps) {
 
         {/* Main Content */}
         <main style={{
-          padding: '40px',
-          paddingTop: '100px',
-          maxWidth: '1400px',
-          margin: '0 auto',
+          padding: '0 0 40px 0',
+          paddingTop: '75px',
+          width: '100%',
           minHeight: 'calc(100vh - 80px)'
         }}>
           {renderContent()}

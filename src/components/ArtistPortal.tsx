@@ -31,7 +31,16 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
   const [isScrolled, setIsScrolled] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [bannerImage, setBannerImage] = useState<string>('https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=1400&h=300&fit=crop');
+  const [bannerImage, setBannerImage] = useState<string>(
+    artistData?.photo || 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=1400&h=300&fit=crop'
+  );
+
+  // Actualizar banner cuando cambia la foto del artista
+  useEffect(() => {
+    if (artistData?.photo) {
+      setBannerImage(artistData.photo);
+    }
+  }, [artistData?.photo]);
 
   // Función para formatear importes en formato europeo
   const formatEuro = (amount: number): string => {
