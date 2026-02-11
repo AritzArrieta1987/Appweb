@@ -141,7 +141,10 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
           transform: 'translate(-50%, -50%)',
           textAlign: 'center',
           zIndex: 10,
-          width: '80%'
+          width: '80%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
         }}>
           {/* Logo BIGARTIST */}
           <img 
@@ -149,7 +152,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
             alt="BIGARTIST" 
             className="logo-image"
             style={{
-              width: '100%',
+              width: 'auto',
               maxWidth: '500px',
               height: 'auto',
               marginBottom: '32px',

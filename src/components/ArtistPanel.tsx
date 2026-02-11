@@ -25,11 +25,11 @@ interface Track {
 
 interface ArtistPanelProps {
   artist: Artist;
-  tracks: Track[];
+  tracks?: Track[];
   onBack: () => void;
 }
 
-export default function ArtistPanel({ artist, tracks, onBack }: ArtistPanelProps) {
+export default function ArtistPanel({ artist, tracks = [], onBack }: ArtistPanelProps) {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [selectedPeriod, setSelectedPeriod] = useState('Este Mes');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -371,7 +371,8 @@ export default function ArtistPanel({ artist, tracks, onBack }: ArtistPanelProps
               border: '2px solid rgba(201, 165, 116, 0.3)',
               borderRadius: '20px',
               padding: '28px',
-              backdropFilter: 'blur(10px)'
+              backdropFilter: 'blur(10px)',
+              minHeight: '400px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <div>
@@ -402,37 +403,39 @@ export default function ArtistPanel({ artist, tracks, onBack }: ArtistPanelProps
                 </select>
               </div>
 
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(201, 165, 116, 0.1)" />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="rgba(201, 165, 116, 0.4)" 
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis 
-                    stroke="rgba(201, 165, 116, 0.4)" 
-                    style={{ fontSize: '12px' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'rgba(30, 47, 47, 0.95)',
-                      border: '1px solid rgba(201, 165, 116, 0.3)',
-                      borderRadius: '8px',
-                      color: '#fff'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#c9a574" 
-                    strokeWidth={3}
-                    dot={{ fill: '#c9a574', r: 5 }}
-                    activeDot={{ r: 7 }}
-                    name="Revenue (€)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {monthlyData.length > 0 && (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(201, 165, 116, 0.1)" />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="rgba(201, 165, 116, 0.4)" 
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis 
+                      stroke="rgba(201, 165, 116, 0.4)" 
+                      style={{ fontSize: '12px' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'rgba(30, 47, 47, 0.95)',
+                        border: '1px solid rgba(201, 165, 116, 0.3)',
+                        borderRadius: '8px',
+                        color: '#fff'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#c9a574" 
+                      strokeWidth={3}
+                      dot={{ fill: '#c9a574', r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name="Revenue (€)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
             {/* Platform Distribution */}
@@ -441,7 +444,8 @@ export default function ArtistPanel({ artist, tracks, onBack }: ArtistPanelProps
               border: '2px solid rgba(201, 165, 116, 0.3)',
               borderRadius: '20px',
               padding: '28px',
-              backdropFilter: 'blur(10px)'
+              backdropFilter: 'blur(10px)',
+              minHeight: '400px'
             }}>
               <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '4px' }}>
                 Por Plataforma
@@ -450,32 +454,34 @@ export default function ArtistPanel({ artist, tracks, onBack }: ArtistPanelProps
                 Distribución de ingresos
               </p>
 
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={platformData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={70}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {platformData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number) => formatEuro(value)}
-                    contentStyle={{
-                      background: 'rgba(30, 47, 47, 0.95)',
-                      border: '1px solid rgba(201, 165, 116, 0.3)',
-                      borderRadius: '8px',
-                      color: '#fff'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {platformData.length > 0 && (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={platformData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {platformData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => formatEuro(value)}
+                      contentStyle={{
+                        background: 'rgba(30, 47, 47, 0.95)',
+                        border: '1px solid rgba(201, 165, 116, 0.3)',
+                        borderRadius: '8px',
+                        color: '#fff'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
 
               <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {platformData.slice(0, 5).map((platform, index) => (
