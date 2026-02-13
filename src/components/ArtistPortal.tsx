@@ -33,6 +33,7 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
   const [uploadMessage, setUploadMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [showHeader, setShowHeader] = useState(true);
   const lastScrollYRef = useRef(0);
+  const [isMobile, setIsMobile] = useState(false);
   const [bannerImage, setBannerImage] = useState<string>(
     artistData?.photo || 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=1400&h=300&fit=crop'
   );
@@ -155,6 +156,18 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
       setBannerImage(artistData.photo);
     }
   }, [artistData?.photo]);
+
+  // Detectar pantalla móvil
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Función para formatear importes en formato europeo
   const formatEuro = (amount: number): string => {
@@ -313,16 +326,16 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
             {/* Métricas principales - Fila superior con 4 tarjetas */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '16px',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+              gap: isMobile ? '12px' : '16px',
               marginBottom: '32px'
             }}>
               {/* Total Royalties */}
               <div style={{
                 background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
                 border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '20px',
-                padding: '20px',
+                borderRadius: isMobile ? '16px' : '20px',
+                padding: isMobile ? '16px' : '20px',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
                 position: 'relative',
                 overflow: 'hidden'
@@ -331,21 +344,21 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
-                  marginBottom: '16px'
+                  marginBottom: isMobile ? '12px' : '16px'
                 }}>
                   <div style={{
-                    width: '48px',
-                    height: '48px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '40px' : '48px',
                     borderRadius: '50%',
                     background: 'rgba(201, 165, 116, 0.15)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    <DollarSign size={24} color="#c9a574" />
+                    <DollarSign size={isMobile ? 20 : 24} color="#c9a574" />
                   </div>
                   <div style={{
-                    fontSize: '10px',
+                    fontSize: isMobile ? '9px' : '10px',
                     fontWeight: '600',
                     color: '#6b7280',
                     letterSpacing: '0.5px',
@@ -356,22 +369,22 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   </div>
                 </div>
                 <div style={{
-                  fontSize: '28px',
+                  fontSize: isMobile ? '22px' : '28px',
                   fontWeight: '700',
                   color: '#ffffff',
                   letterSpacing: '-0.5px',
-                  marginBottom: '8px'
+                  marginBottom: isMobile ? '6px' : '8px'
                 }}>
                   {formatEuro(data.totalRevenue).split('€')[0]}
                 </div>
                 <div style={{
-                  fontSize: '12px',
+                  fontSize: isMobile ? '11px' : '12px',
                   color: '#4ade80',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <TrendingUp size={12} />
+                  <TrendingUp size={isMobile ? 10 : 12} />
                   <span>Balance disponible</span>
                 </div>
               </div>
@@ -380,8 +393,8 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
               <div style={{
                 background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
                 border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '20px',
-                padding: '20px',
+                borderRadius: isMobile ? '16px' : '20px',
+                padding: isMobile ? '16px' : '20px',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
                 position: 'relative',
                 overflow: 'hidden'
@@ -390,21 +403,21 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
-                  marginBottom: '16px'
+                  marginBottom: isMobile ? '12px' : '16px'
                 }}>
                   <div style={{
-                    width: '48px',
-                    height: '48px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '40px' : '48px',
                     borderRadius: '50%',
                     background: 'rgba(201, 165, 116, 0.15)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    <TrendingUp size={24} color="#c9a574" />
+                    <TrendingUp size={isMobile ? 20 : 24} color="#c9a574" />
                   </div>
                   <div style={{
-                    fontSize: '10px',
+                    fontSize: isMobile ? '9px' : '10px',
                     fontWeight: '600',
                     color: '#6b7280',
                     letterSpacing: '0.5px',
@@ -415,22 +428,22 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   </div>
                 </div>
                 <div style={{
-                  fontSize: '28px',
+                  fontSize: isMobile ? '22px' : '28px',
                   fontWeight: '700',
                   color: '#ffffff',
                   letterSpacing: '-0.5px',
-                  marginBottom: '8px'
+                  marginBottom: isMobile ? '6px' : '8px'
                 }}>
                   {formatEuro(data.totalRevenue).split('€')[0]}
                 </div>
                 <div style={{
-                  fontSize: '12px',
+                  fontSize: isMobile ? '11px' : '12px',
                   color: '#4ade80',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <TrendingUp size={12} />
+                  <TrendingUp size={isMobile ? 10 : 12} />
                   <span>Este mes</span>
                 </div>
               </div>
@@ -439,8 +452,8 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
               <div style={{
                 background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
                 border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '20px',
-                padding: '20px',
+                borderRadius: isMobile ? '16px' : '20px',
+                padding: isMobile ? '16px' : '20px',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
                 position: 'relative',
                 overflow: 'hidden'
@@ -449,21 +462,21 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
-                  marginBottom: '16px'
+                  marginBottom: isMobile ? '12px' : '16px'
                 }}>
                   <div style={{
-                    width: '48px',
-                    height: '48px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '40px' : '48px',
                     borderRadius: '50%',
                     background: 'rgba(201, 165, 116, 0.15)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    <BarChart3 size={24} color="#c9a574" />
+                    <BarChart3 size={isMobile ? 20 : 24} color="#c9a574" />
                   </div>
                   <div style={{
-                    fontSize: '10px',
+                    fontSize: isMobile ? '9px' : '10px',
                     fontWeight: '600',
                     color: '#6b7280',
                     letterSpacing: '0.5px',
@@ -474,22 +487,22 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   </div>
                 </div>
                 <div style={{
-                  fontSize: '28px',
+                  fontSize: isMobile ? '22px' : '28px',
                   fontWeight: '700',
                   color: '#ffffff',
                   letterSpacing: '-0.5px',
-                  marginBottom: '8px'
+                  marginBottom: isMobile ? '6px' : '8px'
                 }}>
                   {data.totalStreams.toLocaleString()}
                 </div>
                 <div style={{
-                  fontSize: '12px',
+                  fontSize: isMobile ? '11px' : '12px',
                   color: '#4ade80',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <TrendingUp size={12} />
+                  <TrendingUp size={isMobile ? 10 : 12} />
                   <span>Reproducciones</span>
                 </div>
               </div>
@@ -498,8 +511,8 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
               <div style={{
                 background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
                 border: '1px solid rgba(201, 165, 116, 0.2)',
-                borderRadius: '20px',
-                padding: '20px',
+                borderRadius: isMobile ? '16px' : '20px',
+                padding: isMobile ? '16px' : '20px',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
                 position: 'relative',
                 overflow: 'hidden'
@@ -508,21 +521,21 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
-                  marginBottom: '16px'
+                  marginBottom: isMobile ? '12px' : '16px'
                 }}>
                   <div style={{
-                    width: '48px',
-                    height: '48px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '40px' : '48px',
                     borderRadius: '50%',
                     background: 'rgba(201, 165, 116, 0.15)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    <Music size={24} color="#c9a574" />
+                    <Music size={isMobile ? 20 : 24} color="#c9a574" />
                   </div>
                   <div style={{
-                    fontSize: '10px',
+                    fontSize: isMobile ? '9px' : '10px',
                     fontWeight: '600',
                     color: '#6b7280',
                     letterSpacing: '0.5px',
@@ -533,22 +546,22 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   </div>
                 </div>
                 <div style={{
-                  fontSize: '28px',
+                  fontSize: isMobile ? '22px' : '28px',
                   fontWeight: '700',
                   color: '#ffffff',
                   letterSpacing: '-0.5px',
-                  marginBottom: '8px'
+                  marginBottom: isMobile ? '6px' : '8px'
                 }}>
                   {data.tracks.length}
                 </div>
                 <div style={{
-                  fontSize: '12px',
+                  fontSize: isMobile ? '11px' : '12px',
                   color: '#4ade80',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <TrendingUp size={12} />
+                  <TrendingUp size={isMobile ? 10 : 12} />
                   <span>En catálogo</span>
                 </div>
               </div>
@@ -557,9 +570,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
             {/* Fila de gráficos y datos */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '24px',
-              marginBottom: '32px'
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+              gap: isMobile ? '16px' : '24px',
+              marginBottom: isMobile ? '20px' : '32px'
             }}>
               {/* Overview - Gráfico de ingresos mensuales */}
               <div style={{
@@ -582,13 +595,14 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                 </h2>
                 
                 {data.monthlyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ResponsiveContainer width="100%" height={isMobile ? 200 : 250}>
                     <LineChart data={data.monthlyData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(201, 165, 116, 0.1)" />
                       <XAxis 
                         dataKey="month" 
                         stroke="#AFB3B7" 
-                        style={{ fontSize: '12px' }}
+                        style={{ fontSize: isMobile ? '10px' : '12px' }}
+                        interval={isMobile ? 1 : 0}
                       />
                       <YAxis 
                         stroke="#AFB3B7" 
@@ -908,7 +922,7 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
       case 'Mi Catálogo':
         return (
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '24px', color: '#ffffff' }}>
+            <h1 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: '700', marginBottom: isMobile ? '16px' : '24px', color: '#ffffff' }}>
               Mi Catálogo
             </h1>
             
@@ -938,10 +952,10 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '16px',
-                        padding: '20px',
+                        gap: isMobile ? '12px' : '16px',
+                        padding: isMobile ? '14px' : '20px',
                         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)',
-                        borderRadius: '12px',
+                        borderRadius: isMobile ? '10px' : '12px',
                         border: '1px solid rgba(201, 165, 116, 0.15)',
                         transition: 'all 0.3s ease',
                         cursor: 'pointer'
@@ -959,9 +973,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                     >
                       {/* Icono de canción */}
                       <div style={{
-                        width: '56px',
-                        height: '56px',
-                        borderRadius: '12px',
+                        width: isMobile ? '48px' : '56px',
+                        height: isMobile ? '48px' : '56px',
+                        borderRadius: isMobile ? '10px' : '12px',
                         background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.25) 0%, rgba(201, 165, 116, 0.1) 100%)',
                         display: 'flex',
                         alignItems: 'center',
@@ -970,16 +984,16 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                         border: '1px solid rgba(201, 165, 116, 0.2)',
                         boxShadow: '0 4px 12px rgba(201, 165, 116, 0.1)'
                       }}>
-                        <Disc size={28} color="#c9a574" />
+                        <Disc size={isMobile ? 24 : 28} color="#c9a574" />
                       </div>
 
                       {/* Información de la canción */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontSize: '16px',
+                          fontSize: isMobile ? '14px' : '16px',
                           fontWeight: '600',
                           color: '#ffffff',
-                          marginBottom: '6px',
+                          marginBottom: isMobile ? '4px' : '6px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
@@ -992,18 +1006,18 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                           <div style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            padding: '4px 10px',
+                            gap: isMobile ? '4px' : '6px',
+                            padding: isMobile ? '3px 8px' : '4px 10px',
                             background: 'rgba(201, 165, 116, 0.1)',
                             border: '1px solid rgba(201, 165, 116, 0.2)',
                             borderRadius: '6px',
-                            fontSize: '12px',
+                            fontSize: isMobile ? '10px' : '12px',
                             fontWeight: '600',
                             color: '#c9a574',
                             fontFamily: 'monospace',
                             letterSpacing: '0.5px'
                           }}>
-                            <Globe size={12} />
+                            <Globe size={isMobile ? 10 : 12} />
                             {track.isrc}
                           </div>
                         )}
@@ -1011,7 +1025,7 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
 
                       {/* Badge de estado */}
                       <div style={{
-                        display: 'flex',
+                        display: isMobile ? 'none' : 'flex',
                         alignItems: 'center',
                         gap: '6px',
                         padding: '8px 16px',
@@ -1036,30 +1050,31 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
       case 'Royalties':
         return (
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px', color: '#ffffff' }}>
+            <h1 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: '700', marginBottom: '8px', color: '#ffffff' }}>
               Mis Royalties
             </h1>
-            <p style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '32px' }}>
+            <p style={{ fontSize: isMobile ? '13px' : '14px', color: '#AFB3B7', marginBottom: isMobile ? '20px' : '32px' }}>
               Gestiona tus pagos y solicita transferencias
             </p>
             
             {/* Grid: Tarjeta y Formulario lado a lado */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '420px 1fr',
-              gap: '24px',
-              marginBottom: '24px',
+              gridTemplateColumns: isMobile ? '1fr' : '420px 1fr',
+              gap: isMobile ? '20px' : '24px',
+              marginBottom: isMobile ? '20px' : '24px',
               alignItems: 'start'
             }}>
               {/* Tarjeta de Balance Principal - Estilo Banco Premium */}
               <div style={{
                 background: 'linear-gradient(135deg, #1a2f2f 0%, #2a3f3f 25%, #1f3838 50%, #2c4848 75%, #1a2f2f 100%)',
-                borderRadius: '20px',
-                padding: '32px',
+                borderRadius: isMobile ? '16px' : '20px',
+                padding: isMobile ? '24px' : '32px',
                 boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(201, 165, 116, 0.2)',
                 position: 'relative',
                 overflow: 'hidden',
-                aspectRatio: '1.586',
+                aspectRatio: isMobile ? 'auto' : '1.586',
+                minHeight: isMobile ? '240px' : 'auto',
                 border: '1px solid rgba(201, 165, 116, 0.15)'
               }}>
               {/* Patrón de rejilla decorativo */}
@@ -1109,21 +1124,21 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
-                  marginBottom: '32px'
+                  marginBottom: isMobile ? '24px' : '32px'
                 }}>
                   <div>
                     <div style={{
-                      fontSize: '11px',
+                      fontSize: isMobile ? '10px' : '11px',
                       fontWeight: '700',
                       color: 'rgba(201, 165, 116, 0.7)',
-                      letterSpacing: '2px',
+                      letterSpacing: isMobile ? '1.5px' : '2px',
                       textTransform: 'uppercase',
-                      marginBottom: '6px'
+                      marginBottom: isMobile ? '4px' : '6px'
                     }}>
                       Cuenta Premium
                     </div>
                     <div style={{
-                      fontSize: '17px',
+                      fontSize: isMobile ? '14px' : '17px',
                       fontWeight: '800',
                       background: 'linear-gradient(135deg, #c9a574 0%, #e6c79a 100%)',
                       WebkitBackgroundClip: 'text',
@@ -1137,9 +1152,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   
                   {/* Chip de tarjeta */}
                   <div style={{
-                    width: '48px',
-                    height: '38px',
-                    borderRadius: '8px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '32px' : '38px',
+                    borderRadius: isMobile ? '6px' : '8px',
                     background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.3) 0%, rgba(201, 165, 116, 0.15) 100%)',
                     border: '1px solid rgba(201, 165, 116, 0.4)',
                     position: 'relative',
@@ -1147,10 +1162,10 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   }}>
                     <div style={{
                       position: 'absolute',
-                      top: '8px',
-                      left: '8px',
-                      right: '8px',
-                      bottom: '8px',
+                      top: isMobile ? '6px' : '8px',
+                      left: isMobile ? '6px' : '8px',
+                      right: isMobile ? '6px' : '8px',
+                      bottom: isMobile ? '6px' : '8px',
                       border: '1px solid rgba(201, 165, 116, 0.3)',
                       borderRadius: '4px'
                     }} />
@@ -1158,25 +1173,25 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                 </div>
 
                 {/* Balance disponible */}
-                <div style={{ marginBottom: '24px' }}>
+                <div style={{ marginBottom: isMobile ? '18px' : '24px' }}>
                   <div style={{
-                    fontSize: '11px',
+                    fontSize: isMobile ? '10px' : '11px',
                     fontWeight: '600',
                     color: 'rgba(201, 165, 116, 0.7)',
-                    marginBottom: '8px',
-                    letterSpacing: '1px',
+                    marginBottom: isMobile ? '6px' : '8px',
+                    letterSpacing: isMobile ? '0.8px' : '1px',
                     textTransform: 'uppercase'
                   }}>
                     Balance Disponible
                   </div>
                   <div style={{
-                    fontSize: '42px',
+                    fontSize: isMobile ? '32px' : '42px',
                     fontWeight: '900',
                     background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
-                    letterSpacing: '-1.5px',
+                    letterSpacing: isMobile ? '-1px' : '-1.5px',
                     lineHeight: '1',
                     textShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                     filter: 'drop-shadow(0 2px 4px rgba(255, 255, 255, 0.1))'
@@ -1193,20 +1208,20 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                 }}>
                   <div>
                     <div style={{
-                      fontSize: '10px',
+                      fontSize: isMobile ? '9px' : '10px',
                       fontWeight: '700',
                       color: 'rgba(201, 165, 116, 0.5)',
-                      marginBottom: '6px',
-                      letterSpacing: '1.5px',
+                      marginBottom: isMobile ? '4px' : '6px',
+                      letterSpacing: isMobile ? '1px' : '1.5px',
                       textTransform: 'uppercase'
                     }}>
                       Titular de la cuenta
                     </div>
                     <div style={{
-                      fontSize: '17px',
+                      fontSize: isMobile ? '14px' : '17px',
                       fontWeight: '800',
                       color: '#ffffff',
-                      letterSpacing: '1.5px',
+                      letterSpacing: isMobile ? '1px' : '1.5px',
                       textTransform: 'uppercase',
                       textShadow: '0 2px 8px rgba(0, 0, 0, 0.4)'
                     }}>
@@ -1314,9 +1329,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   {/* Grid de campos del formulario */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '20px',
-                    marginBottom: '20px'
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                    gap: isMobile ? '16px' : '20px',
+                    marginBottom: isMobile ? '16px' : '20px'
                   }}>
                     {/* Nombre */}
                     <div>
@@ -1662,16 +1677,17 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                 <div style={{
                   background: 'rgba(255, 255, 255, 0.02)',
                   borderRadius: '12px',
-                  overflow: 'hidden'
+                  overflow: isMobile ? 'auto' : 'hidden'
                 }}>
                   {/* Encabezado de la tabla */}
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: '140px 1fr 180px 200px 160px',
                     gap: '16px',
-                    padding: '16px 20px',
+                    padding: isMobile ? '12px 16px' : '16px 20px',
                     background: 'rgba(201, 165, 116, 0.08)',
-                    borderBottom: '1px solid rgba(201, 165, 116, 0.15)'
+                    borderBottom: '1px solid rgba(201, 165, 116, 0.15)',
+                    minWidth: isMobile ? '700px' : 'auto'
                   }}>
                     <div style={{ fontSize: '12px', fontWeight: '700', color: '#c9a574', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Fecha
@@ -1698,8 +1714,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                         display: 'grid',
                         gridTemplateColumns: '140px 1fr 180px 200px 160px',
                         gap: '16px',
-                        padding: '18px 20px',
+                        padding: isMobile ? '14px 16px' : '18px 20px',
                         borderBottom: '1px solid rgba(255, 255, 255, 0.03)',
+                        minWidth: isMobile ? '700px' : 'auto',
                         transition: 'all 0.3s ease',
                         cursor: 'pointer'
                       }}
@@ -1906,19 +1923,19 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
       case 'Contratos':
         return (
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px', color: '#ffffff' }}>
+            <h1 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: '700', marginBottom: '8px', color: '#ffffff' }}>
               Mis Contratos
             </h1>
-            <p style={{ fontSize: '14px', color: '#AFB3B7', marginBottom: '32px' }}>
+            <p style={{ fontSize: isMobile ? '13px' : '14px', color: '#AFB3B7', marginBottom: isMobile ? '20px' : '32px' }}>
               Gestiona tus acuerdos y contratos con BIGARTIST ROYALTIES
             </p>
 
             {/* Grid de Contratos */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-              gap: '24px',
-              marginBottom: '32px'
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(400px, 1fr))',
+              gap: isMobile ? '16px' : '24px',
+              marginBottom: isMobile ? '20px' : '32px'
             }}>
               {contracts.map((contract) => (
                 <div
@@ -1926,8 +1943,8 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   style={{
                     background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(30, 47, 47, 0.6) 100%)',
                     border: contract.status === 'Activo' ? '2px solid rgba(201, 165, 116, 0.4)' : '1px solid rgba(201, 165, 116, 0.2)',
-                    borderRadius: '16px',
-                    padding: '24px',
+                    borderRadius: isMobile ? '12px' : '16px',
+                    padding: isMobile ? '18px' : '24px',
                     transition: 'all 0.3s ease',
                     cursor: 'pointer',
                     position: 'relative',
@@ -1997,11 +2014,11 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
-                    gap: '16px',
-                    marginBottom: '20px',
-                    padding: '16px',
+                    gap: isMobile ? '12px' : '16px',
+                    marginBottom: isMobile ? '16px' : '20px',
+                    padding: isMobile ? '12px' : '16px',
                     background: 'rgba(0, 0, 0, 0.2)',
-                    borderRadius: '12px',
+                    borderRadius: isMobile ? '10px' : '12px',
                     border: '1px solid rgba(201, 165, 116, 0.1)'
                   }}>
                     <div>
@@ -2041,7 +2058,8 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                   {/* Botones de acción */}
                   <div style={{
                     display: 'flex',
-                    gap: '12px'
+                    gap: isMobile ? '8px' : '12px',
+                    flexDirection: isMobile ? 'column' : 'row'
                   }}>
                     <button
                       onClick={(e) => {
@@ -2195,7 +2213,7 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
         {/* Banner con menú integrado */}
         <div style={{
           position: 'relative',
-          height: '570px',
+          height: isMobile ? '400px' : '570px',
           overflow: 'hidden'
         }}>
           {/* Banner Image Background */}
@@ -2245,11 +2263,11 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
             left: 0,
             right: 0,
             zIndex: 10,
-            padding: '12px 48px',
+            padding: isMobile ? '12px 20px' : '12px 48px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '32px',
+            gap: isMobile ? '16px' : '32px',
             background: 'linear-gradient(180deg, rgba(15, 32, 39, 0.7) 0%, rgba(15, 32, 39, 0.3) 70%, transparent 100%)',
             borderBottom: '1px solid rgba(201, 165, 116, 0.1)'
           }}>
@@ -2259,14 +2277,14 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                 src={logoImage}
                 alt="BIGARTIST"
                 style={{
-                  height: '40px',
+                  height: isMobile ? '32px' : '40px',
                   transition: 'all 0.4s ease'
                 }}
               />
             </div>
 
             {/* Tabs del menú */}
-            <div style={{ display: 'flex', gap: '8px', flex: 1, justifyContent: 'center' }}>
+            <div style={{ display: isMobile ? 'none' : 'flex', gap: '8px', flex: 1, justifyContent: 'center' }}>
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.name;
@@ -2480,22 +2498,22 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
               <button
                 onClick={onLogout}
                 style={{
-                  padding: '10px 20px',
+                  padding: isMobile ? '8px 12px' : '10px 20px',
                   background: 'rgba(239, 68, 68, 0.15)',
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   borderRadius: '12px',
                   color: '#ef4444',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '13px' : '14px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: isMobile ? '6px' : '8px',
                   transition: 'all 0.3s ease'
                 }}
               >
-                <LogOut size={18} />
-                Salir
+                <LogOut size={isMobile ? 16 : 18} />
+                {!isMobile && 'Salir'}
               </button>
             </div>
           </div>
@@ -2506,22 +2524,22 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
             bottom: 0,
             left: 0,
             right: 0,
-            padding: '0 40px 40px 40px'
+            padding: isMobile ? '0 20px 30px 20px' : '0 40px 40px 40px'
           }}>
             <h1 style={{
-              fontSize: '48px',
+              fontSize: isMobile ? '28px' : '48px',
               fontWeight: '800',
               color: '#ffffff',
-              marginBottom: '12px',
+              marginBottom: isMobile ? '8px' : '12px',
               textShadow: '0 4px 20px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4)',
               letterSpacing: '-0.5px',
               margin: 0,
-              marginBottom: '12px'
+              marginBottom: isMobile ? '8px' : '12px'
             }}>
               Bienvenido, {data.name}
             </h1>
             <p style={{
-              fontSize: '16px',
+              fontSize: isMobile ? '14px' : '16px',
               color: '#AFB3B7',
               fontWeight: '400',
               textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
@@ -2534,8 +2552,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
 
         {/* Main Content */}
         <main style={{
-          padding: '40px',
-          paddingTop: '40px',
+          padding: isMobile ? '20px' : '40px',
+          paddingTop: isMobile ? '20px' : '40px',
+          paddingBottom: isMobile ? '100px' : '40px',
           maxWidth: '1400px',
           margin: '0 auto',
           minHeight: 'calc(100vh - 80px)'
@@ -2546,8 +2565,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
         {/* Footer */}
         <footer style={{
           position: 'relative',
-          marginTop: '60px',
-          padding: '20px 40px'
+          marginTop: isMobile ? '40px' : '60px',
+          padding: isMobile ? '20px' : '20px 40px',
+          display: isMobile ? 'none' : 'block'
         }}>
           <div style={{
             maxWidth: '1400px',
@@ -2575,15 +2595,16 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
       {showPaymentSuccess && (
         <div style={{
           position: 'fixed',
-          top: '24px',
-          right: '24px',
+          top: isMobile ? '16px' : '24px',
+          right: isMobile ? '16px' : '24px',
+          left: isMobile ? '16px' : 'auto',
           background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.98) 0%, rgba(30, 47, 47, 0.98) 100%)',
           border: '2px solid #c9a574',
-          borderRadius: '16px',
-          padding: '20px 24px',
+          borderRadius: isMobile ? '12px' : '16px',
+          padding: isMobile ? '16px 18px' : '20px 24px',
           boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(201, 165, 116, 0.3)',
           zIndex: 10000,
-          minWidth: '400px',
+          minWidth: isMobile ? 'auto' : '400px',
           backdropFilter: 'blur(10px)',
           animation: 'slideInRight 0.4s ease-out'
         }}>
@@ -2723,10 +2744,10 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
             background: 'rgba(0, 0, 0, 0.85)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-end' : 'center',
             justifyContent: 'center',
             zIndex: 10000,
-            padding: '20px'
+            padding: isMobile ? '0' : '20px'
           }}
           onClick={() => setSelectedContract(null)}
         >
@@ -2734,10 +2755,10 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
             style={{
               background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.98) 0%, rgba(30, 47, 47, 0.98) 100%)',
               border: '2px solid #c9a574',
-              borderRadius: '20px',
-              maxWidth: '700px',
+              borderRadius: isMobile ? '20px 20px 0 0' : '20px',
+              maxWidth: isMobile ? '100%' : '700px',
               width: '100%',
-              maxHeight: '90vh',
+              maxHeight: isMobile ? '85vh' : '90vh',
               overflow: 'auto',
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
               animation: 'modalFadeIn 0.3s ease-out'
@@ -2759,22 +2780,22 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
 
             {/* Header del Modal */}
             <div style={{
-              padding: '28px',
+              padding: isMobile ? '20px' : '28px',
               borderBottom: '1px solid rgba(201, 165, 116, 0.2)'
             }}>
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                marginBottom: '16px'
+                marginBottom: isMobile ? '12px' : '16px'
               }}>
                 <h2 style={{
-                  fontSize: '24px',
+                  fontSize: isMobile ? '20px' : '24px',
                   fontWeight: '700',
                   color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px'
+                  gap: isMobile ? '8px' : '12px'
                 }}>
                   <FileSignature size={28} color="#c9a574" />
                   {selectedContract.title}
@@ -2823,9 +2844,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
             </div>
 
             {/* Contenido del Modal */}
-            <div style={{ padding: '28px' }}>
+            <div style={{ padding: isMobile ? '20px' : '28px' }}>
               {/* Descripción */}
-              <div style={{ marginBottom: '28px' }}>
+              <div style={{ marginBottom: isMobile ? '20px' : '28px' }}>
                 <h3 style={{
                   fontSize: '14px',
                   fontWeight: '700',
@@ -2848,9 +2869,9 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
               {/* Información Clave - Grid 2x2 */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '16px',
-                marginBottom: '28px'
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                gap: isMobile ? '12px' : '16px',
+                marginBottom: isMobile ? '20px' : '28px'
               }}>
                 <div style={{
                   background: 'rgba(0, 0, 0, 0.3)',
@@ -3050,6 +3071,66 @@ export default function ArtistPortal({ onLogout, artistData }: ArtistPortalProps
                 Descargar Contrato (PDF)
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Navigation Móvil */}
+      {isMobile && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'linear-gradient(180deg, rgba(26, 47, 47, 0.98) 0%, rgba(30, 47, 47, 0.98) 100%)',
+          backdropFilter: 'blur(20px)',
+          borderTop: '2px solid rgba(201, 165, 116, 0.3)',
+          padding: '12px 0 8px',
+          zIndex: 9999,
+          boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.6)'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            maxWidth: '600px',
+            margin: '0 auto',
+            padding: '0 8px'
+          }}>
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.name;
+              return (
+                <button
+                  key={tab.name}
+                  onClick={() => setActiveTab(tab.name)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: isActive ? 'rgba(201, 165, 116, 0.15)' : 'transparent',
+                    borderRadius: '12px',
+                    color: isActive ? '#c9a574' : 'rgba(255, 255, 255, 0.5)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    minWidth: '64px'
+                  }}
+                >
+                  <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: isActive ? '700' : '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.3px'
+                  }}>
+                    {tab.name === 'Mi Catálogo' ? 'Catálogo' : tab.name}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
