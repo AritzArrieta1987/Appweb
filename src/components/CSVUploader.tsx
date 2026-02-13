@@ -4,7 +4,7 @@ import { uploadCSV, createNotification, getArtists } from '../config/api';
 import { useData } from './DataContext';
 
 export default function CSVUploader() {
-  const { loadData } = useData();
+  const { loadData, addUploadedFile } = useData();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -57,6 +57,20 @@ export default function CSVUploader() {
 
       setUploadedFiles(prev => [...prev, ...results]);
       setSuccess(true);
+
+      // Agregar archivos al contexto global con fecha de subida
+      results.forEach(file => {
+        addUploadedFile({
+          ...file,
+          uploadDate: new Date().toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        });
+      });
 
       // Recargar datos del contexto desde la API
       console.log('🔄 Recargando datos desde API...');

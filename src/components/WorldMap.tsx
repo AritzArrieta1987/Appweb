@@ -1,12 +1,66 @@
-export default function WorldMap() {
-  // Marcadores de países con royalties - 6 países principales
-  const markers = [
-    { x: 180, y: 100, label: 'USA', country: 'United States', amount: '$45.2K', streams: '2.1M' },
-    { x: 235, y: 110, label: 'USA', country: 'United States', amount: '$38.7K', streams: '1.8M' },
-    { x: 433, y: 87, label: 'ES', country: 'Spain', amount: '$28.5K', streams: '1.3M' },
-    { x: 450, y: 75, label: 'UK', country: 'United Kingdom', amount: '$31.8K', streams: '1.5M' },
-    { x: 485, y: 82, label: 'DE', country: 'Germany', amount: '$24.3K', streams: '1.1M' },
-    { x: 713, y: 125, label: 'JP', country: 'Japan', amount: '$19.6K', streams: '920K' }
+interface WorldMapProps {
+  territoryData?: { [key: string]: { revenue: number; streams: number } };
+}
+
+export default function WorldMap({ territoryData = {} }: WorldMapProps) {
+  // Mapeo de códigos de país a posiciones en el mapa y nombres completos
+  const countryPositions: { [key: string]: { x: number; y: number; label: string; country: string } } = {
+    'US': { x: 200, y: 105, label: 'USA', country: 'United States' },
+    'MX': { x: 160, y: 140, label: 'MX', country: 'Mexico' },
+    'BR': { x: 260, y: 230, label: 'BR', country: 'Brazil' },
+    'ES': { x: 433, y: 87, label: 'ES', country: 'Spain' },
+    'UK': { x: 450, y: 75, label: 'UK', country: 'United Kingdom' },
+    'GB': { x: 450, y: 75, label: 'UK', country: 'United Kingdom' },
+    'DE': { x: 485, y: 82, label: 'DE', country: 'Germany' },
+    'FR': { x: 462, y: 90, label: 'FR', country: 'France' },
+    'IT': { x: 492, y: 98, label: 'IT', country: 'Italy' },
+    'JP': { x: 713, y: 125, label: 'JP', country: 'Japan' },
+    'CN': { x: 650, y: 120, label: 'CN', country: 'China' },
+    'KR': { x: 695, y: 120, label: 'KR', country: 'South Korea' },
+    'AU': { x: 760, y: 270, label: 'AU', country: 'Australia' },
+    'CA': { x: 180, y: 80, label: 'CA', country: 'Canada' },
+    'AR': { x: 240, y: 300, label: 'AR', country: 'Argentina' },
+    'CO': { x: 210, y: 160, label: 'CO', country: 'Colombia' },
+  };
+
+  // Formatear números
+  const formatRevenue = (revenue: number): string => {
+    if (revenue >= 1000000) {
+      return `€${(revenue / 1000000).toFixed(1)}M`;
+    } else if (revenue >= 1000) {
+      return `€${(revenue / 1000).toFixed(1)}K`;
+    }
+    return `€${revenue.toFixed(0)}`;
+  };
+
+  const formatStreams = (streams: number): string => {
+    if (streams >= 1000000) {
+      return `${(streams / 1000000).toFixed(1)}M`;
+    } else if (streams >= 1000) {
+      return `${(streams / 1000).toFixed(0)}K`;
+    }
+    return streams.toString();
+  };
+
+  // Generar marcadores basados en datos reales
+  const markers = Object.entries(territoryData)
+    .filter(([territory]) => countryPositions[territory]) // Solo países con posición definida
+    .map(([territory, data]) => {
+      const position = countryPositions[territory];
+      return {
+        ...position,
+        amount: formatRevenue(data.revenue),
+        streams: formatStreams(data.streams),
+        rawRevenue: data.revenue,
+        rawStreams: data.streams
+      };
+    })
+    .sort((a, b) => b.rawRevenue - a.rawRevenue) // Ordenar por revenue descendente
+    .slice(0, 8); // Mostrar máximo 8 países
+
+  // Si no hay datos, usar datos de ejemplo
+  const displayMarkers = markers.length > 0 ? markers : [
+    { x: 200, y: 105, label: 'USA', country: 'United States', amount: '€0', streams: '0', rawRevenue: 0, rawStreams: 0 }
   ];
 
   return (
@@ -124,7 +178,7 @@ export default function WorldMap() {
       }} />
       
       {/* Marcadores de países con royalties */}
-      {markers.map((marker, index) => (
+      {displayMarkers.map((marker, index) => (
         <div
           key={`marker-${index}`}
           style={{
@@ -329,6 +383,24 @@ export default function WorldMap() {
           50% { transform: translate(-50%, -50%) scale(1.8); opacity: 0.3; }
         }
         @keyframes pulse-ring-5 {
+          0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.6; }
+        }
+        
+        @keyframes pulse-outer-6 {
+          0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.8); opacity: 0.3; }
+        }
+        @keyframes pulse-ring-6 {
+          0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.6; }
+        }
+        
+        @keyframes pulse-outer-7 {
+          0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.8); opacity: 0.3; }
+        }
+        @keyframes pulse-ring-7 {
           0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
           50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.6; }
         }

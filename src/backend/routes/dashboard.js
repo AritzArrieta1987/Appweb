@@ -93,6 +93,27 @@ router.get('/stats', authMiddleware, async (req, res) => {
       streams: parseInt(item.streams)
     }));
 
+    // 5. Revenue por territorio/país
+    const [territoryData] = await pool.query(`
+      SELECT 
+        territory,
+        COALESCE(SUM(revenue), 0) as revenue,
+        COALESCE(SUM(quantity), 0) as streams
+      FROM royalties
+      WHERE territory IS NOT NULL AND territory != ''
+      GROUP BY territory
+      ORDER BY revenue DESC
+    `);
+
+    // Crear objeto territoryBreakdown
+    const territoryBreakdown = {};
+    territoryData.forEach(item => {
+      territoryBreakdown[item.territory] = {
+        revenue: parseFloat(item.revenue),
+        streams: parseInt(item.streams)
+      };
+    });
+
     // Respuesta
     res.json({
       totalRevenue: parseFloat(totalsResult[0].total_revenue),
@@ -100,6 +121,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
       artistCount: countsResult[0].artist_count,
       trackCount: countsResult[0].track_count,
       platformBreakdown,
+      territoryBreakdown,
       monthlyData: formattedMonthlyData
     });
 

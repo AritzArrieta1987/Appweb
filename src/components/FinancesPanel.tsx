@@ -1,14 +1,25 @@
 import { useState } from 'react';
-import { Wallet, TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight, Download, Filter, Calendar, Eye, FileText, Clock } from 'lucide-react';
+import { Wallet, TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight, Download, Filter, Calendar, Eye, FileText, Clock, ChevronDown, TrendingDown, Check, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { IncomeSection } from './IncomeSection';
+import { ExpensesSection } from './ExpensesSection';
+import { toast } from '../utils/toast';
 
 interface FinancesPanelProps {
   dashboardData: any;
   artists: any[];
+  uploadedFiles?: any[];
+  paymentRequests?: any[];
+  setPaymentRequests?: (requests: any[]) => void;
+  notifications?: any[];
+  setNotifications?: (notifications: any[]) => void;
 }
 
-export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
+export function FinancesPanel({ dashboardData, artists, paymentRequests = [], setPaymentRequests, notifications = [], setNotifications }: FinancesPanelProps) {
   const [financesTab, setFinancesTab] = useState('overview');
+  const [reportPeriod, setReportPeriod] = useState('monthly'); // monthly, quarterly, yearly
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth());
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
 
   // Mock contracts data - En producción esto vendría del backend
   const contracts = artists.map((artist, index) => ({
@@ -16,6 +27,9 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
     artistId: artist.id,
     percentage: index === 0 ? 70 : 60,
   }));
+
+  // Filtrar solicitudes pendientes
+  const pendingRequests = paymentRequests.filter(req => req.status === 'pending');
 
   // Datos para gráfico lineal - Periodos reales del CSV
   const csvLineData = dashboardData.monthlyData.length > 0 
@@ -51,6 +65,7 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
           { id: 'overview', label: 'Resumen General', icon: Wallet },
           { id: 'income', label: 'Ingresos', icon: ArrowUpRight },
           { id: 'expenses', label: 'Gastos', icon: ArrowDownRight },
+          { id: 'requests', label: 'Solicitudes', icon: DollarSign, badge: pendingRequests.length },
           { id: 'reports', label: 'Reportes', icon: FileText }
         ].map((tab) => {
           const Icon = tab.icon;
@@ -72,7 +87,8 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                 alignItems: 'center',
                 gap: '8px',
                 transition: 'all 0.3s ease',
-                marginBottom: '-2px'
+                marginBottom: '-2px',
+                position: 'relative'
               }}
               onMouseEnter={(e) => {
                 if (!isActive) e.currentTarget.style.color = '#ffffff';
@@ -83,6 +99,37 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
             >
               <Icon size={16} />
               {tab.label}
+              {tab.badge && tab.badge > 0 && (
+                <>
+                  <style>
+                    {`
+                      @keyframes badgePulse {
+                        0%, 100% {
+                          box-shadow: 0 0 10px rgba(201, 165, 116, 0.4);
+                          transform: scale(1);
+                        }
+                        50% {
+                          box-shadow: 0 0 20px rgba(201, 165, 116, 0.8);
+                          transform: scale(1.05);
+                        }
+                      }
+                    `}
+                  </style>
+                  <span style={{
+                    background: '#c9a574',
+                    color: '#2a3f3f',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    minWidth: '18px',
+                    textAlign: 'center',
+                    animation: 'badgePulse 2s ease-in-out infinite'
+                  }}>
+                    {tab.badge}
+                  </span>
+                </>
+              )}
             </button>
           );
         })}
@@ -90,6 +137,9 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
 
       {/* Content Area */}
       <div style={{ padding: '0' }}>
+        {/* Overview Tab Content */}
+        {financesTab === 'overview' && (
+          <>
         {/* Header Cards Grid */}
         <div style={{
           display: 'grid',
@@ -321,7 +371,7 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
               }}>
                 Artistas Pendientes de Solicitud
               </h3>
-              {artists.length > 0 ? (
+              {pendingRequests.length > 0 ? (
                 <div style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -329,8 +379,8 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                   overflowY: 'auto',
                   maxHeight: '140px'
                 }}>
-                  {artists.filter(artist => artist.totalRevenue > 0).map((artist: any, index: number) => (
-                    <div key={artist.id} style={{
+                  {pendingRequests.map((request: any) => (
+                    <div key={request.id} style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -344,7 +394,7 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                           width: '32px',
                           height: '32px',
                           borderRadius: '50%',
-                          background: artist.photo ? `url(${artist.photo})` : '#c9a574',
+                          background: request.artistPhoto ? `url(${request.artistPhoto})` : '#c9a574',
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
                           display: 'flex',
@@ -354,14 +404,14 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                           fontWeight: '600',
                           color: '#2a3f3f'
                         }}>
-                          {!artist.photo && artist.name.charAt(0).toUpperCase()}
+                          {!request.artistPhoto && request.artistName.charAt(0).toUpperCase()}
                         </div>
                         <span style={{
                           fontSize: '14px',
                           fontWeight: '500',
                           color: '#ffffff'
                         }}>
-                          {artist.name}
+                          {request.artistName}
                         </span>
                       </div>
                       <span style={{
@@ -369,7 +419,7 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                         fontWeight: '600',
                         color: '#c9a574'
                       }}>
-                        €{artist.totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        €{request.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   ))}
@@ -381,7 +431,7 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                   textAlign: 'center',
                   marginTop: '32px'
                 }}>
-                  No hay artistas con royalties pendientes
+                  No hay solicitudes pendientes
                 </p>
               )}
             </div>
@@ -538,66 +588,73 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                 overflowY: 'auto',
                 flex: 1
               }}>
-                {artists.length > 0 ? (
-                  artists.slice(0, 3).map((artist: any, index: number) => (
-                    <div key={artist.id} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      background: 'rgba(201, 165, 116, 0.1)',
-                      borderRadius: '10px',
-                      border: '1px solid rgba(201, 165, 116, 0.2)'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                        <div style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '50%',
-                          background: artist.photo ? `url(${artist.photo})` : '#c9a574',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: '#2a3f3f',
-                          flexShrink: 0
-                        }}>
-                          {!artist.photo && artist.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                {pendingRequests.length > 0 ? (
+                  pendingRequests.slice(0, 3).map((request: any) => {
+                    const requestDate = new Date(request.date);
+                    const now = new Date();
+                    const diffHours = Math.floor((now.getTime() - requestDate.getTime()) / (1000 * 60 * 60));
+                    const timeAgo = diffHours < 24 ? `Hace ${diffHours}h` : `Hace ${Math.floor(diffHours / 24)}d`;
+                    
+                    return (
+                      <div key={request.id} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        background: 'rgba(201, 165, 116, 0.1)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(201, 165, 116, 0.2)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                           <div style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            background: request.artistPhoto ? `url(${request.artistPhoto})` : '#c9a574',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             fontSize: '14px',
                             fontWeight: '600',
-                            color: '#ffffff',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
+                            color: '#2a3f3f',
+                            flexShrink: 0
                           }}>
-                            {artist.name}
+                            {!request.artistPhoto && request.artistName.charAt(0).toUpperCase()}
                           </div>
-                          <div style={{
-                            fontSize: '11px',
-                            color: 'rgba(255, 255, 255, 0.5)',
-                            marginTop: '2px'
-                          }}>
-                            Hace {index + 1}h
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#ffffff',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {request.artistName}
+                            </div>
+                            <div style={{
+                              fontSize: '11px',
+                              color: 'rgba(255, 255, 255, 0.5)',
+                              marginTop: '2px'
+                            }}>
+                              {timeAgo}
+                            </div>
                           </div>
                         </div>
+                        <div style={{
+                          fontSize: '13px',
+                          fontWeight: '700',
+                          color: '#c9a574',
+                          whiteSpace: 'nowrap',
+                          marginLeft: '12px'
+                        }}>
+                          €{request.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
                       </div>
-                      <div style={{
-                        fontSize: '13px',
-                        fontWeight: '700',
-                        color: '#c9a574',
-                        whiteSpace: 'nowrap',
-                        marginLeft: '12px'
-                      }}>
-                        €{artist.totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div style={{
                     display: 'flex',
@@ -674,14 +731,14 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                     lineHeight: '1',
                     marginTop: '2px'
                   }}>
-                    {artists.filter(a => a.totalRevenue > 0).length}
+                    {paymentRequests.filter(r => r.status === 'completed').length}
                   </div>
                   <p style={{
                     fontSize: '11px',
                     color: 'rgba(255, 255, 255, 0.5)',
                     marginTop: '2px'
                   }}>
-                    Artistas con pagos procesados
+                    Solicitudes completadas
                   </p>
                 </div>
               </div>
@@ -747,14 +804,14 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
                     lineHeight: '1',
                     marginTop: '2px'
                   }}>
-                    €{dashboardData.totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    €{pendingRequests.reduce((sum, req) => sum + req.amount, 0).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </div>
                   <p style={{
                     fontSize: '11px',
                     color: 'rgba(255, 255, 255, 0.5)',
                     marginTop: '2px'
                   }}>
-                    De plataformas de streaming
+                    Solicitudes pendientes de pago
                   </p>
                 </div>
               </div>
@@ -954,6 +1011,1053 @@ export function FinancesPanel({ dashboardData, artists }: FinancesPanelProps) {
             </div>
           </div>
         </div>
+        </>
+        )}
+
+        {/* Income Tab Content */}
+        {financesTab === 'income' && (
+          <IncomeSection dashboardData={dashboardData} artists={artists} />
+        )}
+
+        {/* Expenses Tab Content */}
+        {financesTab === 'expenses' && (
+          <ExpensesSection dashboardData={dashboardData} artists={artists} />
+        )}
+
+        {/* Reports Tab Content */}
+        {financesTab === 'reports' && (
+          <div style={{ padding: '0' }}>
+            {/* Filtros y Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px',
+              flexWrap: 'wrap',
+              gap: '16px'
+            }}>
+              {/* Filtros de Período */}
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  background: 'rgba(42, 63, 63, 0.4)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(201, 165, 116, 0.2)'
+                }}>
+                  <Filter size={16} color="#c9a574" />
+                  <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', fontWeight: '500' }}>
+                    Período:
+                  </span>
+                  <select
+                    value={reportPeriod}
+                    onChange={(e) => setReportPeriod(e.target.value)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#c9a574',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="monthly" style={{ background: '#2a3f3f' }}>Mensual</option>
+                    <option value="quarterly" style={{ background: '#2a3f3f' }}>Trimestral</option>
+                    <option value="yearly" style={{ background: '#2a3f3f' }}>Anual</option>
+                  </select>
+                  <ChevronDown size={14} color="#c9a574" />
+                </div>
+
+                {reportPeriod === 'monthly' && (
+                  <div style={{
+                    display: 'flex',
+                    gap: '8px'
+                  }}>
+                    <select
+                      value={reportMonth}
+                      onChange={(e) => setReportMonth(Number(e.target.value))}
+                      style={{
+                        padding: '10px 14px',
+                        background: 'rgba(42, 63, 63, 0.4)',
+                        border: '1px solid rgba(201, 165, 116, 0.2)',
+                        borderRadius: '12px',
+                        color: '#ffffff',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((month, idx) => (
+                        <option key={idx} value={idx} style={{ background: '#2a3f3f' }}>{month}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={reportYear}
+                      onChange={(e) => setReportYear(Number(e.target.value))}
+                      style={{
+                        padding: '10px 14px',
+                        background: 'rgba(42, 63, 63, 0.4)',
+                        border: '1px solid rgba(201, 165, 116, 0.2)',
+                        borderRadius: '12px',
+                        color: '#ffffff',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value={2026} style={{ background: '#2a3f3f' }}>2026</option>
+                      <option value={2025} style={{ background: '#2a3f3f' }}>2025</option>
+                      <option value={2024} style={{ background: '#2a3f3f' }}>2024</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Botón de Generar Reporte */}
+              <button
+                onClick={() => {
+                  alert('Reporte generado exitosamente. En producción se descargaría un PDF.');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #c9a574 0%, #b8935d 100%)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: '#2a3f3f',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 12px rgba(201, 165, 116, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 165, 116, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 165, 116, 0.3)';
+                }}
+              >
+                <Download size={18} />
+                Descargar Reporte
+              </button>
+            </div>
+
+            {/* Tarjetas de Resumen */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '16px',
+              marginBottom: '32px'
+            }}>
+              {/* Card 1: Ingresos del Período */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.15) 0%, rgba(201, 165, 116, 0.05) 100%)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid rgba(201, 165, 116, 0.3)'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: 'rgba(201, 165, 116, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <TrendingUp size={20} color="#c9a574" />
+                  </div>
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Ingresos
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  color: '#c9a574',
+                  marginBottom: '8px'
+                }}>
+                  €{dashboardData.totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <ArrowUpRight size={14} color="#4ade80" />
+                  <span style={{
+                    fontSize: '12px',
+                    color: '#4ade80',
+                    fontWeight: '600'
+                  }}>
+                    +12.5%
+                  </span>
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'rgba(255, 255, 255, 0.5)'
+                  }}>
+                    vs período anterior
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 2: BAM Comisión */}
+              <div style={{
+                background: 'rgba(42, 63, 63, 0.4)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid rgba(255, 255, 255, 0.15)'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: 'rgba(201, 165, 116, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <DollarSign size={20} color="#c9a574" />
+                  </div>
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    BAM (30%)
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  color: '#ffffff',
+                  marginBottom: '8px'
+                }}>
+                  €{(dashboardData.totalRevenue * 0.3).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'rgba(255, 255, 255, 0.5)'
+                }}>
+                  Comisión de gestión
+                </div>
+              </div>
+
+              {/* Card 3: Artistas Pagos */}
+              <div style={{
+                background: 'rgba(42, 63, 63, 0.4)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid rgba(255, 255, 255, 0.15)'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: 'rgba(201, 165, 116, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <ArrowUpRight size={20} color="#c9a574" />
+                  </div>
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Artistas (70%)
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  color: '#ffffff',
+                  marginBottom: '8px'
+                }}>
+                  €{(dashboardData.totalRevenue * 0.7).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'rgba(255, 255, 255, 0.5)'
+                }}>
+                  Total pagado a artistas
+                </div>
+              </div>
+
+              {/* Card 4: Gastos */}
+              <div style={{
+                background: 'rgba(42, 63, 63, 0.4)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid rgba(239, 68, 68, 0.2)'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <ArrowDownRight size={20} color="#ef4444" />
+                  </div>
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Gastos
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  color: '#ef4444',
+                  marginBottom: '8px'
+                }}>
+                  €{(dashboardData.totalRevenue * 0.15).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'rgba(255, 255, 255, 0.5)'
+                }}>
+                  Operativos y distribución
+                </div>
+              </div>
+            </div>
+
+            {/* Gráfico Comparativo */}
+            <div style={{
+              background: 'rgba(42, 63, 63, 0.3)',
+              borderRadius: '16px',
+              padding: '28px',
+              border: '1px solid rgba(201, 165, 116, 0.2)',
+              marginBottom: '32px'
+            }}>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: '700',
+                color: '#ffffff',
+                marginBottom: '24px'
+              }}>
+                Comparativa Ingresos vs Gastos
+              </h3>
+              <div style={{ height: '300px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={[
+                      { mes: 'Ene', ingresos: 45000, gastos: 8500 },
+                      { mes: 'Feb', ingresos: 52000, gastos: 9200 },
+                      { mes: 'Mar', ingresos: 48000, gastos: 8800 },
+                      { mes: 'Abr', ingresos: 61000, gastos: 10500 },
+                      { mes: 'May', ingresos: 55000, gastos: 9800 },
+                      { mes: 'Jun', ingresos: 67000, gastos: 11200 }
+                    ]}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                    <XAxis
+                      dataKey="mes"
+                      stroke="rgba(255, 255, 255, 0.6)"
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis
+                      stroke="rgba(255, 255, 255, 0.6)"
+                      style={{ fontSize: '12px' }}
+                      tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'rgba(42, 63, 63, 0.95)',
+                        border: '1px solid rgba(201, 165, 116, 0.3)',
+                        borderRadius: '8px',
+                        color: '#ffffff'
+                      }}
+                      formatter={(value: any) => [`€${value.toLocaleString()}`, '']}
+                      labelStyle={{ color: '#c9a574' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="ingresos" 
+                      stroke="#c9a574" 
+                      strokeWidth={3}
+                      dot={{ fill: '#c9a574', r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name="Ingresos"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="gastos" 
+                      stroke="#ef4444" 
+                      strokeWidth={3}
+                      dot={{ fill: '#ef4444', r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name="Gastos"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Lista de Reportes Generados */}
+            <div style={{
+              background: 'rgba(42, 63, 63, 0.3)',
+              borderRadius: '16px',
+              border: '1px solid rgba(201, 165, 116, 0.2)',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                padding: '24px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#ffffff',
+                  margin: 0
+                }}>
+                  Reportes Generados
+                </h3>
+              </div>
+              <div style={{ padding: '0' }}>
+                {[
+                  { name: 'Reporte Enero 2026', date: '01/02/2026', size: '2.4 MB', type: 'Mensual' },
+                  { name: 'Reporte Diciembre 2025', date: '01/01/2026', size: '2.2 MB', type: 'Mensual' },
+                  { name: 'Reporte Q4 2025', date: '01/01/2026', size: '6.8 MB', type: 'Trimestral' },
+                  { name: 'Reporte Noviembre 2025', date: '01/12/2025', size: '2.1 MB', type: 'Mensual' },
+                  { name: 'Reporte Anual 2025', date: '01/01/2026', size: '15.3 MB', type: 'Anual' }
+                ].map((report, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      padding: '20px 24px',
+                      borderBottom: index < 4 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'background 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(201, 165, 116, 0.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                      <div style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '12px',
+                        background: 'rgba(201, 165, 116, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FileText size={20} color="#c9a574" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#ffffff',
+                          marginBottom: '4px'
+                        }}>
+                          {report.name}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: 'rgba(255, 255, 255, 0.5)'
+                        }}>
+                          {report.date} · {report.size} · {report.type}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button
+                        onClick={() => alert('Vista previa del reporte')}
+                        style={{
+                          padding: '8px 16px',
+                          background: 'rgba(201, 165, 116, 0.1)',
+                          border: '1px solid rgba(201, 165, 116, 0.3)',
+                          borderRadius: '8px',
+                          color: '#c9a574',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(201, 165, 116, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(201, 165, 116, 0.1)';
+                        }}
+                      >
+                        <Eye size={14} />
+                        Ver
+                      </button>
+                      <button
+                        onClick={() => alert('Descargando reporte...')}
+                        style={{
+                          padding: '8px 16px',
+                          background: 'rgba(201, 165, 116, 0.1)',
+                          border: '1px solid rgba(201, 165, 116, 0.3)',
+                          borderRadius: '8px',
+                          color: '#c9a574',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(201, 165, 116, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(201, 165, 116, 0.1)';
+                        }}
+                      >
+                        <Download size={14} />
+                        Descargar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Solicitudes Tab Content */}
+        {financesTab === 'requests' && (
+          <div>
+            {/* Header */}
+            <div style={{
+              background: 'rgba(42, 63, 63, 0.3)',
+              borderRadius: '16px',
+              padding: '24px',
+              border: '1px solid rgba(201, 165, 116, 0.2)',
+              marginBottom: '24px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h2 style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: '#ffffff',
+                    marginBottom: '8px'
+                  }}>
+                    Solicitudes de Pago
+                  </h2>
+                  <p style={{
+                    fontSize: '14px',
+                    color: 'rgba(255, 255, 255, 0.6)'
+                  }}>
+                    Gestiona las solicitudes de royalties de tus artistas
+                  </p>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  gap: '16px'
+                }}>
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '12px 24px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                  }}>
+                    <div style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: '#ffffff'
+                    }}>
+                      {pendingRequests.length}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: 'rgba(255, 255, 255, 0.6)',
+                      marginTop: '4px'
+                    }}>
+                      Pendientes
+                    </div>
+                  </div>
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '12px 24px',
+                    background: 'rgba(201, 165, 116, 0.15)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(201, 165, 116, 0.3)'
+                  }}>
+                    <div style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: '#c9a574'
+                    }}>
+                      {paymentRequests.filter(r => r.status === 'completed').length}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: 'rgba(255, 255, 255, 0.6)',
+                      marginTop: '4px'
+                    }}>
+                      Completadas
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Solicitudes List */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              {paymentRequests.length === 0 ? (
+                <div style={{
+                  background: 'rgba(42, 63, 63, 0.3)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(201, 165, 116, 0.2)',
+                  padding: '64px',
+                  textAlign: 'center'
+                }}>
+                  <DollarSign size={48} style={{ margin: '0 auto 16px', opacity: 0.3, color: '#c9a574' }} />
+                  <p style={{
+                    fontSize: '16px',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    marginBottom: '8px'
+                  }}>
+                    No hay solicitudes de pago
+                  </p>
+                  <p style={{
+                    fontSize: '14px',
+                    color: 'rgba(255, 255, 255, 0.4)'
+                  }}>
+                    Las solicitudes de los artistas aparecerán aquí
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {paymentRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      style={{
+                        background: 'rgba(42, 63, 63, 0.4)',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(201, 165, 116, 0.2)',
+                        padding: '28px 32px',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(42, 63, 63, 0.5)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(201, 165, 116, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(42, 63, 63, 0.4)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                      }}
+                    >
+                      {/* Header Row: ID + Estado + Acciones */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '20px',
+                        paddingBottom: '16px',
+                        borderBottom: '1px solid rgba(201, 165, 116, 0.15)'
+                      }}>
+                        <div style={{
+                          fontSize: '12px',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          fontWeight: '600',
+                          letterSpacing: '0.5px'
+                        }}>
+                          ID #{request.id.toString().slice(-4)}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {/* Estado */}
+                          <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 14px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          background: request.status === 'pending' 
+                            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(175, 179, 183, 0.1) 100%)' 
+                            : request.status === 'completed'
+                            ? 'linear-gradient(135deg, rgba(201, 165, 116, 0.25) 0%, rgba(181, 145, 96, 0.15) 100%)'
+                            : 'linear-gradient(135deg, rgba(42, 63, 63, 0.3) 0%, rgba(62, 83, 83, 0.2) 100%)',
+                          color: request.status === 'pending'
+                            ? '#ffffff'
+                            : request.status === 'completed'
+                            ? '#e5c590'
+                            : '#AFB3B7',
+                          border: `1.5px solid ${
+                            request.status === 'pending'
+                              ? 'rgba(255, 255, 255, 0.3)'
+                              : request.status === 'completed'
+                              ? 'rgba(201, 165, 116, 0.5)'
+                              : 'rgba(42, 63, 63, 0.4)'
+                          }`,
+                          boxShadow: request.status === 'pending'
+                            ? '0 0 20px rgba(255, 255, 255, 0.1)'
+                            : request.status === 'completed'
+                            ? '0 0 20px rgba(201, 165, 116, 0.25)'
+                            : '0 0 20px rgba(42, 63, 63, 0.2)'
+                        }}>
+                          <div style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: request.status === 'pending'
+                              ? '#ffffff'
+                              : request.status === 'completed'
+                              ? '#c9a574'
+                              : '#AFB3B7',
+                            boxShadow: `0 0 8px ${
+                              request.status === 'pending'
+                                ? '#ffffff'
+                                : request.status === 'completed'
+                                ? '#c9a574'
+                                : '#AFB3B7'
+                            }`
+                          }} />
+                          {request.status === 'pending' ? 'Pendiente' : request.status === 'completed' ? 'Completada' : 'En Proceso'}
+                        </div>
+
+                        {/* Acciones */}
+                        {request.status === 'pending' && (
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={() => {
+                                if (setPaymentRequests) {
+                                  setPaymentRequests(
+                                    paymentRequests.map(r => 
+                                      r.id === request.id 
+                                        ? { ...r, status: 'completed' }
+                                        : r
+                                    )
+                                  );
+                                  if (setNotifications) {
+                                    setNotifications([{
+                                      id: Date.now(),
+                                      type: 'success',
+                                      title: 'Pago Aprobado',
+                                      message: `Pago de €${request.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })} a ${request.artistName} aprobado`,
+                                      time: 'Ahora',
+                                      read: false
+                                    }]);
+                                  }
+                                  
+                                  // Mostrar toast de confirmación
+                                  toast.success('Pago Aprobado', {
+                                    description: `El pago de €${request.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })} a ${request.artistName} ha sido aprobado exitosamente.`,
+                                    duration: 5000,
+                                  });
+                                }
+                              }}
+                              style={{
+                                padding: '10px 18px',
+                                background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.25) 0%, rgba(181, 145, 96, 0.2) 100%)',
+                                border: '1.5px solid rgba(201, 165, 116, 0.5)',
+                                borderRadius: '10px',
+                                color: '#e5c590',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 4px 12px rgba(201, 165, 116, 0.15)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201, 165, 116, 0.35) 0%, rgba(181, 145, 96, 0.3) 100%)';
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 165, 116, 0.3)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201, 165, 116, 0.25) 0%, rgba(181, 145, 96, 0.2) 100%)';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 165, 116, 0.15)';
+                              }}
+                            >
+                              <Check size={16} strokeWidth={3} />
+                              Aprobar
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (setPaymentRequests && confirm('¿Estás seguro de rechazar esta solicitud?')) {
+                                  setPaymentRequests(
+                                    paymentRequests.filter(r => r.id !== request.id)
+                                  );
+                                  if (setNotifications) {
+                                    setNotifications([{
+                                      id: Date.now(),
+                                      type: 'error',
+                                      title: 'Pago Rechazado',
+                                      message: `Solicitud de ${request.artistName} rechazada`,
+                                      time: 'Ahora',
+                                      read: false
+                                    }]);
+                                  }
+                                }
+                              }}
+                              style={{
+                                padding: '10px 18px',
+                                background: 'linear-gradient(135deg, rgba(42, 63, 63, 0.3) 0%, rgba(62, 83, 83, 0.2) 100%)',
+                                border: '1.5px solid rgba(175, 179, 183, 0.4)',
+                                borderRadius: '10px',
+                                color: '#AFB3B7',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 4px 12px rgba(42, 63, 63, 0.2)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(42, 63, 63, 0.4) 0%, rgba(62, 83, 83, 0.3) 100%)';
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 6px 20px rgba(42, 63, 63, 0.3)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(42, 63, 63, 0.3) 0%, rgba(62, 83, 83, 0.2) 100%)';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(42, 63, 63, 0.2)';
+                              }}
+                            >
+                              <X size={16} strokeWidth={3} />
+                              Rechazar
+                            </button>
+                          </div>
+                        )}
+                        {request.status === 'completed' && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            background: 'linear-gradient(135deg, rgba(201, 165, 116, 0.2) 0%, rgba(181, 145, 96, 0.15) 100%)',
+                            borderRadius: '10px',
+                            border: '1.5px solid rgba(201, 165, 116, 0.4)',
+                            boxShadow: '0 0 15px rgba(201, 165, 116, 0.2)'
+                          }}>
+                            <Check size={16} color="#c9a574" strokeWidth={3} />
+                            <span style={{
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              color: '#c9a574',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Pagado
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                      {/* Content Grid */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'auto 1fr auto auto',
+                      gap: '32px',
+                      alignItems: 'center'
+                    }}>
+                      {/* Artista */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '50%',
+                          background: request.artistPhoto ? `url(${request.artistPhoto})` : '#c9a574',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '20px',
+                          fontWeight: '700',
+                          color: '#2a3f3f',
+                          flexShrink: 0,
+                          border: '2px solid rgba(201, 165, 116, 0.3)',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                        }}>
+                          {!request.artistPhoto && request.artistName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{
+                            fontSize: '16px',
+                            fontWeight: '700',
+                            color: '#ffffff',
+                            marginBottom: '4px'
+                          }}>
+                            {request.artistName}
+                          </div>
+                          <div style={{
+                            fontSize: '12px',
+                            color: 'rgba(255, 255, 255, 0.5)'
+                          }}>
+                            Artista
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Beneficiario */}
+                      <div>
+                        <div style={{
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          marginBottom: '6px'
+                        }}>
+                          Beneficiario
+                        </div>
+                        <div style={{
+                          fontSize: '15px',
+                          color: '#ffffff',
+                          fontWeight: '600',
+                          marginBottom: '4px'
+                        }}>
+                          {request.firstName} {request.lastName}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          fontFamily: 'monospace'
+                        }}>
+                          {request.accountNumber}
+                        </div>
+                      </div>
+
+                      {/* Monto */}
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          marginBottom: '6px'
+                        }}>
+                          Monto
+                        </div>
+                        <div style={{
+                          fontSize: '24px',
+                          fontWeight: '700',
+                          color: '#c9a574',
+                          letterSpacing: '-0.5px'
+                        }}>
+                          €{request.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
+
+                      {/* Fecha */}
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          marginBottom: '6px'
+                        }}>
+                          Fecha Solicitud
+                        </div>
+                        <div style={{
+                          fontSize: '14px',
+                          color: 'rgba(255, 255, 255, 0.8)',
+                          fontWeight: '600'
+                        }}>
+                          {new Date(request.date).toLocaleDateString('es-ES', { 
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

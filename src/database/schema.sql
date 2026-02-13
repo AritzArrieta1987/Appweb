@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS tracks (
   upc VARCHAR(20),
   total_revenue DECIMAL(15, 2) DEFAULT 0,
   total_streams BIGINT DEFAULT 0,
+  audio_url TEXT,
   release_date DATE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -152,6 +153,22 @@ CREATE TABLE IF NOT EXISTS csv_uploads (
   error_message TEXT,
   FOREIGN KEY (uploaded_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
+
+-- Tabla de Notificaciones
+CREATE TABLE IF NOT EXISTS notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  type ENUM('info', 'success', 'warning', 'csv_upload') DEFAULT 'info',
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Índice para consultas rápidas de notificaciones
+CREATE INDEX idx_notification_user ON notifications(user_id);
+CREATE INDEX idx_notification_read ON notifications(is_read);
 
 -- =====================================================
 -- VISTAS ÚTILES

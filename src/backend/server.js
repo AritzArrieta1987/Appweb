@@ -5,7 +5,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
+// Logger
+const logger = require('./config/logger');
 
 // Importar rutas
 const authRoutes = require('./routes/auth');
@@ -13,12 +17,50 @@ const csvRoutes = require('./routes/csv');
 const dashboardRoutes = require('./routes/dashboard');
 const artistRoutes = require('./routes/artists');
 const trackRoutes = require('./routes/tracks');
+const notificationRoutes = require('./routes/notifications');
+const contractRoutes = require('./routes/contracts');
 
 const app = express();
 
 // =====================================================
 // MIDDLEWARES
 // =====================================================
+
+// Rate limiting - protección contra abuso
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // máximo 100 requests por ventana
+  message: {
+    success: false,
+    message: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Rate limiting más estricto para login
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // máximo 5 intentos de login
+  message: {
+    success: false,
+    message: 'Demasiados intentos de login. Por favor intenta de nuevo en 15 minutos.'
+  },
+  skipSuccessfulRequests: true, // No contar requests exitosos
+});
+
+// Rate limiting para uploads (más permisivo pero controlado)
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 20, // máximo 20 uploads por hora
+  message: {
+    success: false,
+    message: 'Demasiados archivos subidos. Por favor intenta de nuevo más tarde.'
+  },
+});
+
+// Aplicar rate limiting a todas las rutas API
+app.use('/api/', apiLimiter);
 
 // CORS - Permitir peticiones desde el frontend
 app.use(cors({
@@ -30,9 +72,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logs de peticiones
+// Logger middleware
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
+  logger.info(`${req.method} ${req.path}`, {
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  });
   next();
 });
 
@@ -40,11 +85,13 @@ app.use((req, res, next) => {
 // RUTAS API
 // =====================================================
 
-app.use('/api/auth', authRoutes);
-app.use('/api/csv', csvRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/csv', uploadLimiter, csvRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/tracks', trackRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/contracts', contractRoutes);
 
 // Ruta de health check
 app.get('/api/health', (req, res) => {

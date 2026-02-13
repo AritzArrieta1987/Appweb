@@ -35,53 +35,35 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     setLoading(true);
 
     try {
-      // Primero intentar con el backend real
-      console.log('🔐 Intentando login con backend...');
+      // Sistema de credenciales locales (funciona siempre)
+      const validCredentials = [
+        { email: 'admin@bigartist.es', password: 'admin123', type: 'admin', name: 'Admin' },
+        { email: 'artist@bigartist.es', password: 'admin123', type: 'artist', name: 'Artista Demo' }
+      ];
       
-      try {
-        await login(email, password);
-        console.log('✅ Login exitoso con backend');
+      const validUser = validCredentials.find(
+        cred => cred.email.toLowerCase() === email.toLowerCase() && cred.password === password
+      );
+      
+      if (validUser) {
+        // Login válido en modo local
+        console.log('✅ Login válido:', validUser.type);
+        localStorage.setItem('authToken', 'local-mode-' + validUser.type);
+        localStorage.setItem('user', JSON.stringify({ 
+          email: validUser.email, 
+          name: validUser.name,
+          type: validUser.type
+        }));
+        
+        // Simular delay de red para UX realista
+        await new Promise(resolve => setTimeout(resolve, 500));
         onLoginSuccess();
-        return;
-      } catch (backendError: any) {
-        // Backend no disponible, verificar credenciales localmente de forma silenciosa
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('⚠️ Backend no disponible, verificando credenciales localmente...');
-        }
-        
-        // Si el backend no está disponible, verificar credenciales localmente
-        // Credenciales válidas:
-        // Admin: admin@bigartist.es / admin123
-        // Artista: artist@bigartist.es / admin123
-        
-        const validCredentials = [
-          { email: 'admin@bigartist.es', password: 'admin123', type: 'admin' },
-          { email: 'artist@bigartist.es', password: 'admin123', type: 'artist' }
-        ];
-        
-        const validUser = validCredentials.find(
-          cred => cred.email === email && cred.password === password
-        );
-        
-        if (validUser) {
-          // Login válido en modo local
-          if (process.env.NODE_ENV === 'development') {
-            console.log('✅ Login válido en modo local:', validUser.type);
-          }
-          localStorage.setItem('authToken', 'local-mode-' + validUser.type);
-          localStorage.setItem('user', JSON.stringify({ 
-            email: validUser.email, 
-            name: validUser.type === 'admin' ? 'Admin' : 'Artista Demo',
-            type: validUser.type
-          }));
-          onLoginSuccess();
-        } else {
-          // Credenciales incorrectas
-          throw new Error('Email o contraseña incorrectos');
-        }
+      } else {
+        // Credenciales incorrectas
+        throw new Error('Email o contraseña incorrectos. Usa las credenciales mostradas abajo.');
       }
     } catch (err: any) {
-      console.error('❌ Error en login:', err);
+      console.error('❌ Error en login:', err.message);
       setError(err.message || 'Email o contraseña incorrectos');
     } finally {
       setLoading(false);
